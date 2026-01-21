@@ -4,7 +4,7 @@ import '../providers/app_state.dart';
 import 'dashboard.dart';
 import 'task_list.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
@@ -24,14 +24,17 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.today), label: 'Today Tasks'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.today),
+            label: 'Today Tasks',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Skills'),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddTaskDialog(context),
         child: const Icon(Icons.add),
-        ),
+      ),
     );
   }
 
@@ -51,21 +54,21 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               TextField(
                 controller: titleController,
-              decoration: const InputDecoration(labelText: 'Quest Title'),
-            ),
-            const SizedBox(height: 16),
-            DropDownButton<String>(
-              value: selectedSkillId,
-              isExpanded: true,
-              items: appState.skills.map((skill) {
-                return DropdownMenuItem(
-                  value: sill.id,
-                  child: Text(skill.name),
-                );
-              }).toList(),
-              onChanged: (value) =>
-                setDialogState(() => selectedSkillId = value),
-            ),
+                decoration: const InputDecoration(labelText: 'Quest Title'),
+              ),
+              const SizedBox(height: 16),
+              DropdownButton<String>(
+                value: selectedSkillId,
+                isExpanded: true,
+                items: appState.skills.map((skill) {
+                  return DropdownMenuItem(
+                    value: skill.id,
+                    child: Text(skill.name),
+                  );
+                }).toList(),
+                onChanged: (value) =>
+                    setDialogState(() => selectedSkillId = value),
+              ),
             ],
           ),
           actions: [
@@ -75,7 +78,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (titleController.text.isNotEmpty && selectedSkillId != null) {
+                if (titleController.text.isNotEmpty &&
+                    selectedSkillId != null) {
                   appState.addTask(titleController.text, selectedSkillId!);
                   Navigator.pop(context);
                 }
