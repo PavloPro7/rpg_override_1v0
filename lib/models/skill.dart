@@ -6,6 +6,7 @@ class Skill {
   final String category;
   double xp;
   final Color color;
+  final double difficulty; // 1.0 = normal, 2.0 = double xp needed, etc.
 
   Skill({
     required this.id,
@@ -13,6 +14,7 @@ class Skill {
     required this.category,
     this.xp = 0.0,
     required this.color,
+    this.difficulty = 1.0,
   });
 
   Map<String, dynamic> toMap() {
@@ -22,6 +24,7 @@ class Skill {
       'category': category,
       'xp': xp,
       'color': color.value,
+      'difficulty': difficulty,
     };
   }
 
@@ -32,6 +35,7 @@ class Skill {
       category: map['category'] ?? '',
       xp: (map['xp'] ?? 0.0).toDouble(),
       color: Color(map['color'] ?? Colors.blue.value),
+      difficulty: (map['difficulty'] ?? 1.0).toDouble(),
     );
   }
 
@@ -41,6 +45,7 @@ class Skill {
     String? category,
     double? xp,
     Color? color,
+    double? difficulty,
   }) {
     return Skill(
       id: id ?? this.id,
@@ -48,11 +53,16 @@ class Skill {
       category: category ?? this.category,
       xp: xp ?? this.xp,
       color: color ?? this.color,
+      difficulty: difficulty ?? this.difficulty,
     );
   }
 
-  int get level => (xp / 100).floor() + 1;
-  double get progressInLevel => (xp % 10) / 10;
+  // Base XP per level is 100, multiplied by difficulty
+  double get totalXpForCurrentLevel => 100 * difficulty;
+
+  int get level => (xp / totalXpForCurrentLevel).floor() + 1;
+  double get progressInLevel =>
+      (xp % totalXpForCurrentLevel) / totalXpForCurrentLevel;
 
   void addXp(double amount) {
     xp += amount;
@@ -61,7 +71,7 @@ class Skill {
 
   void applyDailyPenalty(double amount) {
     if (xp > 0) {
-      xp -= amount;
+      xp -= amount * difficulty; // Penalty also scales with difficulty
       if (xp < 0) xp = 0;
     }
   }

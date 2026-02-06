@@ -25,22 +25,34 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) =>
+            setState(() => _selectedIndex = index),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.today), label: 'Today'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Skills'),
+          NavigationDestination(
+            icon: Icon(Icons.today_outlined),
+            selectedIcon: Icon(Icons.today),
+            label: 'Today',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
+            label: 'Skills',
+          ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddTaskDialog(context),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _selectedIndex == 1
+          ? FloatingActionButton.large(
+              onPressed: () => _showAddTaskDialog(context),
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 
@@ -54,35 +66,67 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('New Quest'),
+          icon: const Icon(Icons.auto_awesome),
+          title: const Text('Accept New Quest'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: titleController,
-                decoration: const InputDecoration(labelText: 'Quest Title'),
+                decoration: InputDecoration(
+                  labelText: 'Quest Name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                ),
               ),
-              const SizedBox(height: 16),
-              DropdownButton<String>(
-                value: selectedSkillId,
-                isExpanded: true,
-                items: appState.skills.map((skill) {
-                  return DropdownMenuItem(
-                    value: skill.id,
-                    child: Text(skill.name),
-                  );
-                }).toList(),
-                onChanged: (value) =>
-                    setDialogState(() => selectedSkillId = value),
+              const SizedBox(height: 20),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Target Skill',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedSkillId,
+                    isExpanded: true,
+                    items: appState.skills.map((skill) {
+                      return DropdownMenuItem(
+                        value: skill.id,
+                        child: Row(
+                          children: [
+                            Icon(Icons.bolt, size: 16, color: skill.color),
+                            const SizedBox(width: 8),
+                            Text(skill.name),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) =>
+                        setDialogState(() => selectedSkillId = value),
+                  ),
+                ),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: const Text('Decline'),
             ),
-            ElevatedButton(
+            FilledButton(
               onPressed: () {
                 if (titleController.text.isNotEmpty &&
                     selectedSkillId != null) {

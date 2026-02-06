@@ -98,6 +98,31 @@ class AppState extends ChangeNotifier {
     await _firestore.collection('tasks').doc(newTask.id).set(newTask.toMap());
   }
 
+  Future<void> addSkill(
+    String name,
+    String category,
+    Color color,
+    double difficulty,
+    int startLevel,
+  ) async {
+    final newSkill = Skill(
+      id: name.toLowerCase().replaceAll(' ', '_'),
+      name: name,
+      category: category,
+      color: color,
+      difficulty: difficulty,
+      xp: (startLevel - 1) * (100 * difficulty),
+    );
+
+    _skills.add(newSkill);
+    notifyListeners();
+
+    await _firestore
+        .collection('skills')
+        .doc(newSkill.id)
+        .set(newSkill.toMap());
+  }
+
   Future<void> completeTask(String taskId) async {
     final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
     if (taskIndex != -1 && !_tasks[taskIndex].isCompleted) {
@@ -108,7 +133,8 @@ class AppState extends ChangeNotifier {
       );
 
       if (skillIndex != -1) {
-        _skills[skillIndex].addXp(1.0);
+        // Constant reward of 10 XP units
+        _skills[skillIndex].addXp(10.0);
 
         // Update task in Firestore
         await _firestore.collection('tasks').doc(taskId).update({
