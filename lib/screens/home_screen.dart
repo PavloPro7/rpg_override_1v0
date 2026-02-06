@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
-import 'dashboard.dart';
+import 'dashboard_screen.dart';
+import 'skills_screen.dart';
 import 'task_list.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,7 +15,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = [TodayTasksScreen(), DashboardScreen()];
+  static const List<Widget> _pages = [
+    DashboardScreen(),
+    TodayTasksScreen(),
+    SkillsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -25,9 +30,10 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) => setState(() => _selectedIndex = index),
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.today),
-            label: 'Today Tasks',
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
           ),
+          BottomNavigationBarItem(icon: Icon(Icons.today), label: 'Today'),
           BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Skills'),
         ],
       ),

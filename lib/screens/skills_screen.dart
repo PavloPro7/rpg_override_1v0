@@ -3,8 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../models/skill.dart';
 
-class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+class SkillsScreen extends StatelessWidget {
+  const SkillsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -54,8 +54,7 @@ class SkillCard extends StatelessWidget {
                     ),
                     Text(
                       skill.category,
-                      style: TextStyle(color: Colors.grey[600],
-                      fontSize: 12),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                   ],
                 ),
