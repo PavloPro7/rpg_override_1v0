@@ -21,20 +21,33 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+
     return MaterialApp(
       title: 'RPG Life',
       debugShowCheckedModeBanner: false,
+      themeMode: appState.themeMode,
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: Colors.pink,
-        textTheme: GoogleFonts.robotoTextTheme(),
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
+        textTheme: GoogleFonts.robotoTextTheme(
+          ThemeData.light().textTheme.apply(
+            bodyColor: Colors.black87,
+            displayColor: Colors.black,
+          ),
+        ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: Colors.deepPurple,
-        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
         brightness: Brightness.dark,
+        textTheme: GoogleFonts.interTextTheme(
+          ThemeData.dark().textTheme.apply(
+            bodyColor: Colors.white,
+            displayColor: Colors.white,
+          ),
+        ),
       ),
       home: const HomeScreen(),
     );

@@ -42,6 +42,7 @@ class AppState extends ChangeNotifier {
 
   List<Task> _tasks = [];
   final _uuid = const Uuid();
+  ThemeMode _themeMode = ThemeMode.system;
 
   AppState() {
     _loadFromFirestore();
@@ -49,6 +50,13 @@ class AppState extends ChangeNotifier {
 
   List<Skill> get skills => _skills;
   List<Task> get tasks => _tasks;
+  ThemeMode get themeMode => _themeMode;
+
+  void toggleTheme(bool isDark) {
+    _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+
   List<Task> get todayTasks => _tasks.where((t) {
     final now = DateTime.now();
     return t.date.year == now.year &&
