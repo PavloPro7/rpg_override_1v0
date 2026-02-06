@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../models/skill.dart';
+import '../utils/skill_dialog_utils.dart';
 
 class SkillsScreen extends StatelessWidget {
   const SkillsScreen({super.key});
@@ -17,7 +18,7 @@ class SkillsScreen extends StatelessWidget {
         actions: [
           IconButton.filledTonal(
             icon: const Icon(Icons.library_add_rounded),
-            onPressed: () => _showAddSkillDialog(context),
+            onPressed: () => SkillDialogUtils.showSkillDialog(context),
           ),
           const SizedBox(width: 8),
         ],
@@ -27,150 +28,70 @@ class SkillsScreen extends StatelessWidget {
         itemCount: appState.skills.length,
         itemBuilder: (context, index) {
           final skill = appState.skills[index];
-          return SkillCard(skill: skill);
+          return GestureDetector(
+            onLongPress: () => _showSkillOptionsBottomSheet(context, skill),
+            child: SkillCard(skill: skill),
+          );
         },
       ),
     );
   }
 
-  void _showAddSkillDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final categoryController = TextEditingController();
-    double difficulty = 1.0;
-    double startLevel = 1.0;
-    Color selectedColor = Colors.blue;
-
-    final List<Color> colorPresets = [
-      Colors.blue,
-      Colors.red,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.pink,
-      Colors.teal,
-      Colors.amber,
-    ];
-
-    showDialog(
+  void _showSkillOptionsBottomSheet(BuildContext context, Skill skill) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          icon: const Icon(Icons.psychology),
-          title: const Text('Design New Skill'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Skill Name',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.label),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: categoryController,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.category),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text('Hardability (Difficulty)'),
-                Slider(
-                  value: difficulty,
-                  min: 1.0,
-                  max: 5.0,
-                  divisions: 4,
-                  label: 'x${difficulty.toInt()}',
-                  onChanged: (val) => setDialogState(() => difficulty = val),
-                ),
-                Text(
-                  difficulty == 1.0
-                      ? 'Easy'
-                      : difficulty <= 2.0
-                      ? 'Medium'
-                      : difficulty <= 3.0
-                      ? 'Hard'
-                      : 'Legendary',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                const Text('Starting Level'),
-                Slider(
-                  value: startLevel,
-                  min: 1.0,
-                  max: 50.0,
-                  divisions: 49,
-                  label: startLevel.toInt().toString(),
-                  onChanged: (val) => setDialogState(() => startLevel = val),
-                ),
-                const SizedBox(height: 16),
-                const Text('Skill Color'),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: colorPresets.map((color) {
-                    final isSelected = selectedColor == color;
-                    return GestureDetector(
-                      onTap: () => setDialogState(() => selectedColor = color),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(color: Colors.white, width: 2)
-                              : null,
-                          boxShadow: isSelected
-                              ? [
-                                  const BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 4,
-                                  ),
-                                ]
-                              : null,
-                        ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit Skill'),
+                onTap: () {
+                  Navigator.pop(context); // Close bottom sheet
+                  SkillDialogUtils.showSkillDialog(
+                    context,
+                    skill: skill,
+                  ); // Open edit dialog
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.dashboard),
+                title: const Text('Go to Dashboard'),
+                onTap: () {
+                  Navigator.pop(context); // Close bottom sheet
+                  // TODO: Implement navigation to skill dashboard
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Navigating to ${skill.name} dashboard (Not implemented yet)',
                       ),
-                    );
-                  }).toList(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_forever, color: Colors.red),
+                title: const Text(
+                  'Delete Skill',
+                  style: TextStyle(color: Colors.red),
                 ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty) {
-                  final appState = Provider.of<AppState>(
+                onTap: () {
+                  Navigator.pop(context); // Close bottom sheet
+                  Provider.of<AppState>(
                     context,
                     listen: false,
+                  ).removeSkill(skill.id);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${skill.name} deleted')),
                   );
-                  appState.addSkill(
-                    nameController.text,
-                    categoryController.text.isEmpty
-                        ? 'General'
-                        : categoryController.text,
-                    selectedColor,
-                    difficulty,
-                    startLevel.toInt(),
-                  );
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Create Skill'),
-            ),
-          ],
-        ),
-      ),
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -204,13 +125,25 @@ class SkillCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        skill.name,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            skill.icon,
+                            style: const TextStyle(fontSize: 20),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              skill.name,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.5,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                       Text(
                         skill.category.toUpperCase(),

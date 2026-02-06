@@ -88,7 +88,7 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 24),
             _buildSectionHeader('Skills Overview'),
             SizedBox(
-              height: 110,
+              height: 150,
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 scrollDirection: Axis.horizontal,
@@ -211,6 +211,8 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Text(skill.icon, style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 4),
             Text(
               skill.name,
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),

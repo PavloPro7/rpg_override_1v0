@@ -7,6 +7,7 @@ class Skill {
   double xp;
   final Color color;
   final double difficulty; // 1.0 = normal, 2.0 = double xp needed, etc.
+  final String icon; // emoji icon
 
   Skill({
     required this.id,
@@ -15,6 +16,7 @@ class Skill {
     this.xp = 0.0,
     required this.color,
     this.difficulty = 1.0,
+    this.icon = '⭐',
   });
 
   Map<String, dynamic> toMap() {
@@ -25,6 +27,7 @@ class Skill {
       'xp': xp,
       'color': color.value,
       'difficulty': difficulty,
+      'icon': icon,
     };
   }
 
@@ -36,6 +39,7 @@ class Skill {
       xp: (map['xp'] ?? 0.0).toDouble(),
       color: Color(map['color'] ?? Colors.blue.value),
       difficulty: (map['difficulty'] ?? 1.0).toDouble(),
+      icon: map['icon'] ?? '⭐',
     );
   }
 
@@ -46,6 +50,7 @@ class Skill {
     double? xp,
     Color? color,
     double? difficulty,
+    String? icon,
   }) {
     return Skill(
       id: id ?? this.id,
@@ -54,6 +59,7 @@ class Skill {
       xp: xp ?? this.xp,
       color: color ?? this.color,
       difficulty: difficulty ?? this.difficulty,
+      icon: icon ?? this.icon,
     );
   }
 

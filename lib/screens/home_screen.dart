@@ -4,6 +4,8 @@ import '../providers/app_state.dart';
 import 'dashboard_screen.dart';
 import 'skills_screen.dart';
 import 'task_list.dart';
+import 'profile_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,10 +17,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = [
-    DashboardScreen(),
-    TodayTasksScreen(),
-    SkillsScreen(),
+  final List<Widget> _pages = [
+    const DashboardScreen(),
+    const TodayTasksScreen(),
+    const SkillsScreen(),
+    const ProfileScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -45,6 +49,16 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIcon: Icon(Icons.bar_chart),
             label: 'Skills',
           ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
         ],
       ),
       floatingActionButton: _selectedIndex == 1
@@ -58,9 +72,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showAddTaskDialog(BuildContext context) {
     final titleController = TextEditingController();
-    String? selectedSkillId;
     final appState = Provider.of<AppState>(context, listen: false);
-    selectedSkillId = appState.skills.first.id;
+
+    // Initial skill selection
+    String? selectedSkillId = appState.skills.isNotEmpty
+        ? appState.skills.first.id
+        : null;
 
     showDialog(
       context: context,
@@ -107,8 +124,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         value: skill.id,
                         child: Row(
                           children: [
-                            Icon(Icons.bolt, size: 16, color: skill.color),
-                            const SizedBox(width: 8),
+                            Text(
+                              skill.icon,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            const SizedBox(width: 12),
                             Text(skill.name),
                           ],
                         ),

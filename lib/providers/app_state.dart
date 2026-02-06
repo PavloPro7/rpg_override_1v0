@@ -104,6 +104,7 @@ class AppState extends ChangeNotifier {
     Color color,
     double difficulty,
     int startLevel,
+    String icon,
   ) async {
     final newSkill = Skill(
       id: name.toLowerCase().replaceAll(' ', '_'),
@@ -112,6 +113,7 @@ class AppState extends ChangeNotifier {
       color: color,
       difficulty: difficulty,
       xp: (startLevel - 1) * (100 * difficulty),
+      icon: icon,
     );
 
     _skills.add(newSkill);
@@ -121,6 +123,21 @@ class AppState extends ChangeNotifier {
         .collection('skills')
         .doc(newSkill.id)
         .set(newSkill.toMap());
+  }
+
+  Future<void> updateSkill(Skill skill) async {
+    final index = _skills.indexWhere((s) => s.id == skill.id);
+    if (index != -1) {
+      _skills[index] = skill;
+      notifyListeners();
+      await _firestore.collection('skills').doc(skill.id).update(skill.toMap());
+    }
+  }
+
+  Future<void> removeSkill(String skillId) async {
+    _skills.removeWhere((s) => s.id == skillId);
+    notifyListeners();
+    await _firestore.collection('skills').doc(skillId).delete();
   }
 
   Future<void> completeTask(String taskId) async {
