@@ -184,13 +184,37 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     );
 
     return ListTile(
-      leading: IconButton(
-        icon: Icon(
-          task.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
-          color: task.isCompleted ? Colors.green : skill.color,
-          size: 28,
-        ),
-        onPressed: () => appState.completeTask(task.id),
+      horizontalTitleGap: 8,
+      leading: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(
+              task.isCompleted
+                  ? Icons.check_circle
+                  : Icons.radio_button_unchecked,
+              color: task.isCompleted ? Colors.green : skill.color,
+              size: 28,
+            ),
+            onPressed: () => appState.completeTask(task.id),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 2),
+          Visibility(
+            visible: !task.isCompleted,
+            maintainSize: true,
+            maintainAnimation: true,
+            maintainState: true,
+            child: IconButton(
+              icon: const Icon(Icons.swap_horiz, size: 20, color: Colors.grey),
+              onPressed: () => _showMoveTaskDialog(context, task),
+              tooltip: 'Move to another date',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ),
+        ],
       ),
       title: Text(
         task.title,
@@ -199,18 +223,9 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
           color: task.isCompleted ? Colors.grey : null,
         ),
       ),
-      trailing: Wrap(
-        spacing: 8,
-        children: [
-          if (!task.isCompleted)
-            const Icon(Icons.star_border, color: Colors.grey),
-          IconButton(
-            icon: const Icon(Icons.swap_horiz, size: 20, color: Colors.grey),
-            onPressed: () => _showMoveTaskDialog(context, task),
-            tooltip: 'Move to another date',
-          ),
-        ],
-      ),
+      trailing: !task.isCompleted
+          ? const Icon(Icons.star_border, color: Colors.grey)
+          : null,
     );
   }
 
