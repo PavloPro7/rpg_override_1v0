@@ -57,12 +57,13 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<Task> get todayTasks => _tasks.where((t) {
-    final now = DateTime.now();
-    return t.date.year == now.year &&
-        t.date.month == now.month &&
-        t.date.day == now.day;
-  }).toList();
+  List<Task> getTasksForDate(DateTime date) {
+    return _tasks.where((t) {
+      return t.date.year == date.year &&
+          t.date.month == date.month &&
+          t.date.day == date.day;
+    }).toList();
+  }
 
   Future<void> _loadFromFirestore() async {
     // Load skills
@@ -85,17 +86,29 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addTask(String title, String skillId) async {
+  Future<void> addTask(String title, String skillId, {DateTime? date}) async {
     final newTask = Task(
       id: _uuid.v4(),
       title: title,
       skillId: skillId,
-      date: DateTime.now(),
+      date: date ?? DateTime.now(),
     );
     _tasks.add(newTask);
     notifyListeners();
 
     await _firestore.collection('tasks').doc(newTask.id).set(newTask.toMap());
+  }
+
+  Future<void> updateTaskDate(String taskId, DateTime newDate) async {
+    final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
+    if (taskIndex != -1) {
+      _tasks[taskIndex] = _tasks[taskIndex].copyWith(date: newDate);
+      notifyListeners();
+
+      await _firestore.collection('tasks').doc(taskId).update({
+        'date': newDate.toIso8601String(),
+      });
+    }
   }
 
   Future<void> addSkill(
