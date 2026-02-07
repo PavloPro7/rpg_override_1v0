@@ -42,7 +42,7 @@ class _RadarChartPainter extends CustomPainter {
 
     // Draw background concentric polygons
     final bgPaint = Paint()
-      ..color = colorScheme.outlineVariant.withOpacity(0.3)
+      ..color = colorScheme.outlineVariant.withValues(alpha: 0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
@@ -65,7 +65,7 @@ class _RadarChartPainter extends CustomPainter {
 
     // Draw axis lines and labels
     final axisPaint = Paint()
-      ..color = colorScheme.outline.withOpacity(0.5)
+      ..color = colorScheme.outline.withValues(alpha: 0.5)
       ..strokeWidth = 1.0;
 
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
@@ -96,7 +96,7 @@ class _RadarChartPainter extends CustomPainter {
 
     // Draw the skill area
     final areaPaint = Paint()
-      ..color = colorScheme.primary.withOpacity(0.4)
+      ..color = colorScheme.primary.withValues(alpha: 0.4)
       ..style = PaintingStyle.fill;
 
     final borderPaint = Paint()

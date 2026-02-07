@@ -3,11 +3,20 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'providers/app_state.dart';
 import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    // Firebase already initialized or error
+    debugPrint('Firebase initialization info: $e');
+  }
   runApp(
     ChangeNotifierProvider(
       create: (context) => AppState(),
@@ -49,7 +58,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const HomeScreen(),
+      home: appState.isAuthenticated ? const HomeScreen() : const LoginScreen(),
     );
   }
 }

@@ -147,7 +147,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant.withOpacity(0.3),
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(

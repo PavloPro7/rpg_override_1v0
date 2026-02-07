@@ -45,7 +45,7 @@ class DashboardScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Card(
                 elevation: 0,
-                color: colorScheme.surfaceVariant,
+                color: colorScheme.surfaceContainerHighest,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),
@@ -139,7 +139,9 @@ class DashboardScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Card(
                   elevation: 0,
-                  color: colorScheme.surfaceVariant.withOpacity(0.5),
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.5,
+                  ),
                   child: Column(
                     children: appState.tasks.reversed.take(5).map((task) {
                       final skill = appState.skills.firstWhere(
@@ -199,10 +201,10 @@ class DashboardScreen extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return Card(
       elevation: 0,
-      color: skill.color.withOpacity(0.05),
+      color: skill.color.withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: skill.color.withOpacity(0.2)),
+        side: BorderSide(color: skill.color.withValues(alpha: 0.2)),
       ),
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: Container(
@@ -224,7 +226,7 @@ class DashboardScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: skill.color.withOpacity(0.1),
+                color: skill.color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -241,7 +243,9 @@ class DashboardScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: skill.progressInLevel,
-                backgroundColor: colorScheme.outlineVariant.withOpacity(0.2),
+                backgroundColor: colorScheme.outlineVariant.withValues(
+                  alpha: 0.2,
+                ),
                 color: skill.color,
                 minHeight: 6,
               ),
@@ -263,7 +267,7 @@ class DashboardScreen extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return Card(
       elevation: 0,
-      color: colorScheme.primaryContainer.withOpacity(0.3),
+      color: colorScheme.primaryContainer.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -278,8 +282,8 @@ class DashboardScreen extends StatelessWidget {
                   child: CircularProgressIndicator(
                     value: progress,
                     strokeWidth: 8,
-                    backgroundColor: colorScheme.outlineVariant.withOpacity(
-                      0.2,
+                    backgroundColor: colorScheme.outlineVariant.withValues(
+                      alpha: 0.2,
                     ),
                     color: color,
                     strokeCap: StrokeCap.round,

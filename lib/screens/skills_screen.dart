@@ -61,7 +61,6 @@ class SkillsScreen extends StatelessWidget {
                 title: const Text('Go to Dashboard'),
                 onTap: () {
                   Navigator.pop(context); // Close bottom sheet
-                  // TODO: Implement navigation to skill dashboard
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
@@ -107,11 +106,13 @@ class SkillCard extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      color: colorScheme.surfaceVariant.withOpacity(0.5),
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -163,9 +164,11 @@ class SkillCard extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: skill.color.withOpacity(0.1),
+                    color: skill.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: skill.color.withOpacity(0.2)),
+                    border: Border.all(
+                      color: skill.color.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Text(
                     'Level ${skill.level}',
@@ -186,8 +189,8 @@ class SkillCard extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: skill.progressInLevel,
                     minHeight: 20,
-                    backgroundColor: colorScheme.outlineVariant.withOpacity(
-                      0.3,
+                    backgroundColor: colorScheme.outlineVariant.withValues(
+                      alpha: 0.3,
                     ),
                     color: skill.color,
                   ),

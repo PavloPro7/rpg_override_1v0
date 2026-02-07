@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -6,6 +8,9 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+
+    final appState = context.watch<AppState>();
+    final user = appState.currentUser;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Profile'), centerTitle: true),
@@ -23,12 +28,12 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'New Player',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Text(
+              user?.email?.split('@')[0] ?? 'Hero Candidate',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             Text(
-              'player@example.com',
+              user?.email ?? 'anonymous@rpg.life',
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 32),
@@ -36,11 +41,13 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Card(
                 elevation: 0,
-                color: colorScheme.surfaceVariant.withOpacity(0.3),
+                color: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.3,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
-                    color: colorScheme.outlineVariant.withOpacity(0.5),
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                   ),
                 ),
                 child: Padding(
@@ -66,6 +73,14 @@ class ProfileScreen extends StatelessWidget {
                         Icons.lock_outline_rounded,
                         'Change Password',
                         () {},
+                      ),
+                      const Divider(height: 32),
+                      _buildActionRow(
+                        context,
+                        Icons.logout_rounded,
+                        'Logout Account',
+                        () => appState.signOut(),
+                        isDestructive: true,
                       ),
                     ],
                   ),
@@ -108,8 +123,11 @@ class ProfileScreen extends StatelessWidget {
     BuildContext context,
     IconData icon,
     String label,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    bool isDestructive = false,
+  }) {
+    final color = isDestructive ? Colors.redAccent : null;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -117,11 +135,15 @@ class ProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
-            Icon(icon, size: 20),
+            Icon(icon, size: 20, color: color),
             const SizedBox(width: 16),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: TextStyle(fontWeight: FontWeight.w500, color: color),
+            ),
             const Spacer(),
-            const Icon(Icons.chevron_right_rounded, size: 20),
+            if (!isDestructive)
+              const Icon(Icons.chevron_right_rounded, size: 20),
           ],
         ),
       ),
