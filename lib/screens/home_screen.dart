@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/app_state.dart';
 import 'dashboard_screen.dart';
 import 'skills_screen.dart';
 import 'task_list.dart';
@@ -19,8 +17,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Widget> get _pages => [
     const DashboardScreen(),
-    TodayTasksScreen(onProfileTap: () => setState(() => _selectedIndex = 3)),
     const SkillsScreen(),
+    TodayTasksScreen(onProfileTap: () => setState(() => _selectedIndex = 3)),
     const ProfileScreen(),
     const SettingsScreen(),
   ];
@@ -29,135 +27,93 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _pages[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) =>
-            setState(() => _selectedIndex = index),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today),
-            label: 'Today',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'Skills',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-      ),
-      floatingActionButton: _selectedIndex == 1
-          ? FloatingActionButton.large(
-              onPressed: () => _showAddTaskDialog(context),
-              child: const Icon(Icons.add),
-            )
-          : null,
-    );
-  }
-
-  void _showAddTaskDialog(BuildContext context) {
-    final titleController = TextEditingController();
-    final appState = Provider.of<AppState>(context, listen: false);
-
-    // Initial skill selection
-    String? selectedSkillId = appState.skills.isNotEmpty
-        ? appState.skills.first.id
-        : null;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          icon: const Icon(Icons.auto_awesome),
-          title: const Text('Accept New Quest'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: InputDecoration(
-                  labelText: 'Quest Name',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                ),
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 5.0,
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildNavItem(
+                0,
+                Icons.dashboard_outlined,
+                Icons.dashboard,
+                'Stats',
               ),
-              const SizedBox(height: 20),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Target Skill',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                  ),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selectedSkillId,
-                    isExpanded: true,
-                    items: appState.skills.map((skill) {
-                      return DropdownMenuItem(
-                        value: skill.id,
-                        child: Row(
-                          children: [
-                            Text(
-                              skill.icon,
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(skill.name),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) =>
-                        setDialogState(() => selectedSkillId = value),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Decline'),
             ),
-            FilledButton(
-              onPressed: () {
-                if (titleController.text.isNotEmpty &&
-                    selectedSkillId != null) {
-                  appState.addTask(titleController.text, selectedSkillId!);
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Accept Quest'),
+            Expanded(
+              child: _buildNavItem(
+                1,
+                Icons.bar_chart_outlined,
+                Icons.bar_chart,
+                'Skills',
+              ),
+            ),
+            const SizedBox(width: 72), // Centered spacing for the FAB
+            Expanded(
+              child: _buildNavItem(
+                3,
+                Icons.person_outline_rounded,
+                Icons.person_rounded,
+                'Profile',
+              ),
+            ),
+            Expanded(
+              child: _buildNavItem(
+                4,
+                Icons.settings_outlined,
+                Icons.settings,
+                'Settings',
+              ),
             ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => setState(() => _selectedIndex = 2),
+        backgroundColor: _selectedIndex == 2
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.primaryContainer,
+        foregroundColor: _selectedIndex == 2
+            ? Theme.of(context).colorScheme.onPrimary
+            : Theme.of(context).colorScheme.onPrimaryContainer,
+        child: const Icon(Icons.today),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    IconData selectedIcon,
+    String label,
+  ) {
+    final isSelected = _selectedIndex == index;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return InkWell(
+      onTap: () => setState(() => _selectedIndex = index),
+      borderRadius: BorderRadius.circular(12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isSelected ? selectedIcon : icon,
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.onSurfaceVariant,
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: isSelected
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
       ),
     );
   }

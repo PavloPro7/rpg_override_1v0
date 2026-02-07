@@ -55,6 +55,10 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
           Expanded(child: _buildTaskList(context, activeTasks, completedTasks)),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddTaskDialog(context),
+        child: const Icon(Icons.add),
+      ),
     );
   }
 
@@ -254,6 +258,102 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
             child: const Text('Cancel'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showAddTaskDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    final appState = Provider.of<AppState>(context, listen: false);
+
+    // Initial skill selection
+    String? selectedSkillId = appState.skills.isNotEmpty
+        ? appState.skills.first.id
+        : null;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          icon: const Icon(Icons.auto_awesome),
+          title: const Text('Accept New Quest'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: 'Quest Name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Target Skill',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: selectedSkillId,
+                    isExpanded: true,
+                    items: appState.skills.map((skill) {
+                      return DropdownMenuItem(
+                        value: skill.id,
+                        child: Row(
+                          children: [
+                            Text(
+                              skill.icon,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(skill.name),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) =>
+                        setDialogState(() => selectedSkillId = value),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Decline'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (titleController.text.isNotEmpty &&
+                    selectedSkillId != null) {
+                  appState.addTask(
+                    titleController.text,
+                    selectedSkillId!,
+                    date: _selectedDate,
+                  );
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('Accept Quest'),
+            ),
+          ],
+        ),
       ),
     );
   }
