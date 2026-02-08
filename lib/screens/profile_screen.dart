@@ -123,14 +123,18 @@ class ProfileScreen extends StatelessWidget {
                       context,
                       Icons.email_outlined,
                       'Change E-mail',
-                      () {},
+                      appState.isAnonymous
+                          ? null
+                          : () => _showChangeEmailDialog(context, appState),
                     ),
                     const SizedBox(height: 16),
                     _buildActionRow(
                       context,
                       Icons.lock_outline_rounded,
                       'Change Password',
-                      () {},
+                      appState.isAnonymous
+                          ? null
+                          : () => _showChangePasswordDialog(context, appState),
                     ),
                   ]),
                   const SizedBox(height: 24),
@@ -312,6 +316,195 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  void _showChangeEmailDialog(BuildContext context, AppState appState) {
+    final emailController = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Change E-mail'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Enter your new e-mail address. A verification link will be sent before the change takes effect.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: emailController,
+                enabled: !isLoading,
+                decoration: const InputDecoration(
+                  labelText: 'New E-mail',
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      final email = emailController.text.trim();
+                      if (email.isEmpty || !email.contains('@')) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please enter a valid e-mail'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => isLoading = true);
+                      final error = await appState.updateEmail(email);
+                      if (context.mounted) {
+                        if (error != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(error),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          setDialogState(() => isLoading = false);
+                        } else {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Verification sent to new e-mail!'),
+                              backgroundColor: Colors.blueAccent,
+                            ),
+                          );
+                        }
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Send Verification'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context, AppState appState) {
+    final passController = TextEditingController();
+    final confirmController = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Change Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: passController,
+                enabled: !isLoading,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'New Password',
+                  prefixIcon: Icon(Icons.lock_outline_rounded),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: confirmController,
+                enabled: !isLoading,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Confirm New Password',
+                  prefixIcon: Icon(Icons.lock_reset_rounded),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      final pass = passController.text;
+                      if (pass.length < 6) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Password must be at least 6 characters',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      if (pass != confirmController.text) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Passwords do not match'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => isLoading = true);
+                      final error = await appState.updatePassword(pass);
+                      if (context.mounted) {
+                        if (error != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(error),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          setDialogState(() => isLoading = false);
+                        } else {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Password updated successfully!'),
+                            ),
+                          );
+                        }
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSectionCard(
     BuildContext context,
     String title,
@@ -370,10 +563,16 @@ class ProfileScreen extends StatelessWidget {
     BuildContext context,
     IconData icon,
     String label,
-    VoidCallback onTap, {
+    VoidCallback? onTap, {
     bool isDestructive = false,
   }) {
-    final color = isDestructive ? Colors.redAccent : null;
+    final color = isDestructive
+        ? Colors.redAccent
+        : (onTap == null
+              ? Theme.of(
+                  context,
+                ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4)
+              : null);
 
     return InkWell(
       onTap: onTap,
@@ -390,7 +589,11 @@ class ProfileScreen extends StatelessWidget {
             ),
             const Spacer(),
             if (!isDestructive)
-              const Icon(Icons.chevron_right_rounded, size: 20),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: onTap == null ? color : null,
+              ),
           ],
         ),
       ),

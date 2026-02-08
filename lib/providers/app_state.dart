@@ -205,8 +205,40 @@ class AppState extends ChangeNotifier {
       _userName = name;
       _userAge = age;
       _avatarUrl = avatarUrl;
+      await _user!.updateDisplayName(name);
       notifyListeners();
       return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  Future<String?> updateEmail(String newEmail) async {
+    if (_user == null) return "No user logged in";
+    try {
+      // Modern secure way: sends verification to new email before updating
+      await _user!.verifyBeforeUpdateEmail(newEmail);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        return "Security check failed. Please log out and log in again to change your email.";
+      }
+      return e.message;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
+  Future<String?> updatePassword(String newPassword) async {
+    if (_user == null) return "No user logged in";
+    try {
+      await _user!.updatePassword(newPassword);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        return "Security check failed. Please log out and log in again to change your password.";
+      }
+      return e.message;
     } catch (e) {
       return e.toString();
     }
