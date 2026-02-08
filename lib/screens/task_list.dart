@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/app_state.dart';
 import '../models/task.dart';
+import 'settings_screen.dart';
 
 class TodayTasksScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
@@ -33,6 +34,13 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
           style: TextStyle(fontWeight: FontWeight.w500),
         ),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.settings),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SettingsScreen()),
+          ),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),

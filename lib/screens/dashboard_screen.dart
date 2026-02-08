@@ -27,9 +27,16 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Dashboard'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.settings),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SettingsScreen()),
+          ),
+        ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 8.0),
+            padding: const EdgeInsets.only(right: 16.0),
             child: InkWell(
               onTap: onProfileTap,
               child: CircleAvatar(
@@ -48,14 +55,6 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
           ),
-          IconButton.filledTonal(
-            icon: const Icon(Icons.settings),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SettingsScreen()),
-            ),
-          ),
-          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(

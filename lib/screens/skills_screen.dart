@@ -3,24 +3,54 @@ import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../models/skill.dart';
 import '../utils/skill_dialog_utils.dart';
+import 'settings_screen.dart';
 
 class SkillsScreen extends StatelessWidget {
-  const SkillsScreen({super.key});
+  final VoidCallback? onProfileTap;
+  const SkillsScreen({super.key, this.onProfileTap});
 
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Character Skills'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.settings),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SettingsScreen()),
+          ),
+        ),
         actions: [
           IconButton.filledTonal(
             icon: const Icon(Icons.library_add_rounded),
             onPressed: () => SkillDialogUtils.showSkillDialog(context),
           ),
           const SizedBox(width: 8),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: InkWell(
+              onTap: onProfileTap,
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: colorScheme.primaryContainer,
+                backgroundImage: appState.avatarUrl != null
+                    ? NetworkImage(appState.avatarUrl!)
+                    : null,
+                child: appState.avatarUrl == null
+                    ? Icon(
+                        Icons.person_rounded,
+                        size: 20,
+                        color: colorScheme.onPrimaryContainer,
+                      )
+                    : null,
+              ),
+            ),
+          ),
         ],
       ),
       body: ListView.builder(
