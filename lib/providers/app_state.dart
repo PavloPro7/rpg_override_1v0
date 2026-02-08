@@ -15,6 +15,8 @@ class AppState extends ChangeNotifier {
   String? _userName;
   int? _userAge;
   String? _avatarUrl;
+  DateTime? _registrationDateFromFirestore;
+  bool _isSigningUp = false;
   final _uuid = const Uuid();
   ThemeMode _themeMode = ThemeMode.system;
 
@@ -30,6 +32,7 @@ class AppState extends ChangeNotifier {
         _userName = null;
         _userAge = null;
         _avatarUrl = null;
+        _themeMode = ThemeMode.system;
         notifyListeners();
       }
     });
@@ -75,12 +78,32 @@ class AppState extends ChangeNotifier {
   String? get userName => _userName;
   int? get userAge => _userAge;
   String? get avatarUrl => _avatarUrl;
-  DateTime? get registrationDate => _user?.metadata.creationTime;
+  DateTime? get registrationDate {
+    if (_registrationDateFromFirestore != null) {
+      return _registrationDateFromFirestore!.toUtc();
+    }
+    return _user?.metadata.creationTime?.toUtc();
+  }
+
   bool get isAuthenticated => _user != null;
 
   void toggleTheme(bool isDark) {
     _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    debugPrint('Theme toggled to: ${_themeMode.name}');
     notifyListeners();
+
+    if (_user != null) {
+      _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .set({'themeMode': _themeMode.name}, SetOptions(merge: true))
+          .then((_) {
+            debugPrint('Theme saved to Firestore: ${_themeMode.name}');
+          })
+          .catchError((e) {
+            debugPrint('Failed to save theme to Firestore: $e');
+          });
+    }
   }
 
   List<Task> getTasksForDate(DateTime date) {
@@ -99,6 +122,7 @@ class AppState extends ChangeNotifier {
     int age,
     String? avatarUrl,
   ) async {
+    _isSigningUp = true;
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -106,6 +130,7 @@ class AppState extends ChangeNotifier {
       );
 
       if (credential.user != null) {
+        await credential.user!.updateDisplayName(name);
         await _firestore.collection('users').doc(credential.user!.uid).set({
           'name': name,
           'age': age,
@@ -120,6 +145,8 @@ class AppState extends ChangeNotifier {
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
+    } finally {
+      _isSigningUp = false;
     }
   }
 
@@ -155,7 +182,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _loadFromFirestore() async {
-    if (_user == null) return;
+    if (_user == null || _isSigningUp) return;
 
     final userDoc = _firestore.collection('users').doc(_user!.uid);
 
@@ -163,9 +190,32 @@ class AppState extends ChangeNotifier {
     final userSnapshot = await userDoc.get();
     if (userSnapshot.exists) {
       final userData = userSnapshot.data();
-      _userName = userData?['name'] as String?;
+      debugPrint('DEBUG: Loading profile for ${_user!.email}: $userData');
+      _userName = (userData?['name'] as String?) ?? _user?.displayName;
       _userAge = userData?['age'] as int?;
       _avatarUrl = userData?['avatarUrl'] as String?;
+      debugPrint('DEBUG: Profile Sync - Name: $_userName, Age: $_userAge');
+
+      final createdAtVal = userData?['createdAt'];
+      if (createdAtVal is Timestamp) {
+        _registrationDateFromFirestore = createdAtVal.toDate();
+      } else if (createdAtVal is String) {
+        _registrationDateFromFirestore = DateTime.tryParse(createdAtVal);
+      }
+      final savedTheme = userData?['themeMode'] as String?;
+      debugPrint('Loaded theme from Firestore: $savedTheme');
+      if (savedTheme != null) {
+        try {
+          _themeMode = ThemeMode.values.firstWhere(
+            (m) => m.name == savedTheme,
+            orElse: () => ThemeMode.system,
+          );
+          debugPrint('Applied theme mode: ${_themeMode.name}');
+          notifyListeners(); // Update theme immediately
+        } catch (e) {
+          debugPrint('Error parsing saved theme: $e');
+        }
+      }
     }
 
     // Load skills

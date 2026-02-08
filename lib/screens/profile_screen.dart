@@ -35,9 +35,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              appState.userName ??
-                  user?.email?.split('@')[0] ??
-                  'Hero Candidate',
+              appState.userName ?? user?.email?.split('@')[0] ?? 'Unnamed Hero',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             if (appState.userAge != null)
@@ -54,74 +52,100 @@ class ProfileScreen extends StatelessWidget {
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 32),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Card(
-                elevation: 0,
-                color: colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.3,
+            // Date of Start - Separate Point
+            if (appState.registrationDate != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: colorScheme.secondary.withValues(alpha: 0.3),
                   ),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      _buildInfoRow(
-                        context,
-                        Icons.calendar_today_rounded,
-                        'Date of Start',
-                        appState.registrationDate != null
-                            ? DateFormat(
-                                'MMM dd, yyyy',
-                              ).format(appState.registrationDate!)
-                            : 'Authenticating...',
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 16,
+                      color: colorScheme.secondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Started: ${DateFormat('MMM dd, yyyy').format(appState.registrationDate!)}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.secondary,
                       ),
-                      const Divider(height: 32),
-                      _buildActionRow(
-                        context,
-                        Icons.edit_rounded,
-                        'Edit Profile',
-                        () => _showEditProfileDialog(context, appState),
-                      ),
-                      const Divider(height: 32),
-                      _buildActionRow(
-                        context,
-                        Icons.email_outlined,
-                        'Change E-mail',
-                        () {},
-                      ),
-                      const SizedBox(height: 16),
-                      _buildActionRow(
-                        context,
-                        Icons.lock_outline_rounded,
-                        'Change Password',
-                        () {},
-                      ),
-                      const Divider(height: 32),
-                      _buildActionRow(
-                        context,
-                        Icons.logout_rounded,
-                        'Logout Account',
-                        () => appState.signOut(),
-                        isDestructive: true,
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ),
             const SizedBox(height: 32),
-            const Text(
-              'Infrastructure Ready for Auth',
-              style: TextStyle(
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-                color: Colors.grey,
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  // Identity Box
+                  _buildSectionCard(context, 'Identity', [
+                    _buildInfoRow(
+                      context,
+                      Icons.badge_rounded,
+                      'Name',
+                      appState.userName ?? 'Not Set',
+                    ),
+                    const SizedBox(height: 16),
+                    _buildInfoRow(
+                      context,
+                      Icons.cake_rounded,
+                      'Age',
+                      appState.userAge?.toString() ?? 'Not Set',
+                    ),
+                  ]),
+                  const SizedBox(height: 24),
+
+                  // Settings Box
+                  _buildSectionCard(context, 'Settings', [
+                    _buildActionRow(
+                      context,
+                      Icons.edit_rounded,
+                      'Edit Profile',
+                      () => _showEditProfileDialog(context, appState),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildActionRow(
+                      context,
+                      Icons.email_outlined,
+                      'Change E-mail',
+                      () {},
+                    ),
+                    const SizedBox(height: 16),
+                    _buildActionRow(
+                      context,
+                      Icons.lock_outline_rounded,
+                      'Change Password',
+                      () {},
+                    ),
+                  ]),
+                  const SizedBox(height: 24),
+
+                  // Logout Box
+                  _buildSectionCard(context, 'Account', [
+                    _buildActionRow(
+                      context,
+                      Icons.logout_rounded,
+                      'Logout Account',
+                      () => appState.signOut(),
+                      isDestructive: true,
+                    ),
+                  ]),
+                ],
               ),
             ),
           ],
@@ -282,6 +306,43 @@ class ProfileScreen extends StatelessWidget {
                     )
                   : const Text('Save'),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard(
+    BuildContext context,
+    String title,
+    List<Widget> children,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.primary,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...children,
           ],
         ),
       ),
