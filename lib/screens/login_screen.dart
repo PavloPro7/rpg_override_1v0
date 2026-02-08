@@ -12,6 +12,8 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _ageController = TextEditingController();
   bool _isLogin = true;
   bool _isLoading = false;
 
@@ -26,10 +28,20 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text.trim(),
       );
     } else {
-      error = await appState.signUp(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-      );
+      final name = _nameController.text.trim();
+      final age = int.tryParse(_ageController.text.trim()) ?? 0;
+
+      if (name.isEmpty || age <= 0) {
+        error = "Please enter a valid name and age";
+      } else {
+        error = await appState.signUp(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+          name,
+          age,
+          null, // Default avatar
+        );
+      }
     }
 
     if (mounted && error != null) {
@@ -107,6 +119,32 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       obscureText: true,
                     ),
+                    if (!_isLogin) ...[
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          labelText: 'Name',
+                          prefixIcon: const Icon(Icons.badge_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        keyboardType: TextInputType.name,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _ageController,
+                        decoration: InputDecoration(
+                          labelText: 'Age',
+                          prefixIcon: const Icon(Icons.cake_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ],
                     const SizedBox(height: 32),
                     SizedBox(
                       width: double.infinity,

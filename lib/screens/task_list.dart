@@ -38,11 +38,19 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
             padding: const EdgeInsets.only(right: 16.0),
             child: InkWell(
               onTap: widget.onProfileTap,
-              child: const CircleAvatar(
+              child: CircleAvatar(
                 radius: 18,
-                backgroundImage: NetworkImage(
-                  'https://via.placeholder.com/150',
-                ), // Placeholder
+                backgroundColor: colorScheme.primaryContainer,
+                backgroundImage: appState.avatarUrl != null
+                    ? NetworkImage(appState.avatarUrl!)
+                    : null,
+                child: appState.avatarUrl == null
+                    ? Icon(
+                        Icons.person_rounded,
+                        size: 20,
+                        color: colorScheme.onPrimaryContainer,
+                      )
+                    : null,
               ),
             ),
           ),

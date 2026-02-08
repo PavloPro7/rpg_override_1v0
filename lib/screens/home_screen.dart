@@ -16,7 +16,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   List<Widget> get _pages => [
-    const DashboardScreen(),
+    DashboardScreen(onProfileTap: () => setState(() => _selectedIndex = 3)),
     const SkillsScreen(),
     TodayTasksScreen(onProfileTap: () => setState(() => _selectedIndex = 3)),
     const ProfileScreen(),

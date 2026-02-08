@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../providers/app_state.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -21,17 +22,33 @@ class ProfileScreen extends StatelessWidget {
             CircleAvatar(
               radius: 60,
               backgroundColor: colorScheme.primaryContainer,
-              child: Icon(
-                Icons.person_rounded,
-                size: 64,
-                color: colorScheme.onPrimaryContainer,
-              ),
+              backgroundImage: appState.avatarUrl != null
+                  ? NetworkImage(appState.avatarUrl!)
+                  : null,
+              child: appState.avatarUrl == null
+                  ? Icon(
+                      Icons.person_rounded,
+                      size: 64,
+                      color: colorScheme.onPrimaryContainer,
+                    )
+                  : null,
             ),
             const SizedBox(height: 24),
             Text(
-              user?.email?.split('@')[0] ?? 'Hero Candidate',
+              appState.userName ??
+                  user?.email?.split('@')[0] ??
+                  'Hero Candidate',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+            if (appState.userAge != null)
+              Text(
+                'Age: ${appState.userAge}',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             Text(
               user?.email ?? 'anonymous@rpg.life',
               style: TextStyle(color: colorScheme.onSurfaceVariant),
@@ -58,7 +75,18 @@ class ProfileScreen extends StatelessWidget {
                         context,
                         Icons.calendar_today_rounded,
                         'Date of Start',
-                        'Feb 06, 2026',
+                        appState.registrationDate != null
+                            ? DateFormat(
+                                'MMM dd, yyyy',
+                              ).format(appState.registrationDate!)
+                            : 'Authenticating...',
+                      ),
+                      const Divider(height: 32),
+                      _buildActionRow(
+                        context,
+                        Icons.edit_rounded,
+                        'Edit Profile',
+                        () => _showEditProfileDialog(context, appState),
                       ),
                       const Divider(height: 32),
                       _buildActionRow(
@@ -95,6 +123,164 @@ class ProfileScreen extends StatelessWidget {
                 fontStyle: FontStyle.italic,
                 color: Colors.grey,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditProfileDialog(BuildContext context, AppState appState) {
+    final nameController = TextEditingController(text: appState.userName);
+    final ageController = TextEditingController(
+      text: appState.userAge?.toString() ?? '',
+    );
+    String? selectedAvatar = appState.avatarUrl;
+    bool isLoading = false;
+
+    final avatars = [
+      'https://api.dicebear.com/7.x/pixel-art/png?seed=Warrior',
+      'https://api.dicebear.com/7.x/pixel-art/png?seed=Mage',
+      'https://api.dicebear.com/7.x/pixel-art/png?seed=Rogue',
+      'https://api.dicebear.com/7.x/pixel-art/png?seed=Cleric',
+      'https://api.dicebear.com/7.x/pixel-art/png?seed=Paladin',
+    ];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit Profile'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Choose Avatar',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.center,
+                  children: avatars.map((url) {
+                    final isSelected = selectedAvatar == url;
+                    return GestureDetector(
+                      onTap: isLoading
+                          ? null
+                          : () => setDialogState(() => selectedAvatar = url),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.transparent,
+                            width: 3,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 28,
+                          backgroundImage: NetworkImage(url),
+                          backgroundColor: Colors.transparent,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: nameController,
+                  enabled: !isLoading,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    prefixIcon: Icon(Icons.badge_outlined),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: ageController,
+                  enabled: !isLoading,
+                  decoration: const InputDecoration(
+                    labelText: 'Age',
+                    prefixIcon: Icon(Icons.cake_outlined),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      final name = nameController.text.trim();
+                      final ageString = ageController.text.trim();
+                      final age = int.tryParse(ageString) ?? 0;
+
+                      if (name.isEmpty || age <= 0) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please enter valid details'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => isLoading = true);
+
+                      try {
+                        final error = await appState.updateProfile(
+                          name,
+                          age,
+                          selectedAvatar,
+                        );
+                        if (context.mounted) {
+                          if (error != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(error),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            setDialogState(() => isLoading = false);
+                          } else {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Profile updated!')),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          setDialogState(() => isLoading = false);
+                        }
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Save'),
             ),
           ],
         ),

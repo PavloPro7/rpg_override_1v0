@@ -5,7 +5,8 @@ import '../widgets/radar_chart.dart';
 import 'settings_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+  final VoidCallback? onProfileTap;
+  const DashboardScreen({super.key, this.onProfileTap});
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +28,26 @@ class DashboardScreen extends StatelessWidget {
         title: const Text('Dashboard'),
         centerTitle: true,
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: InkWell(
+              onTap: onProfileTap,
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: colorScheme.primaryContainer,
+                backgroundImage: appState.avatarUrl != null
+                    ? NetworkImage(appState.avatarUrl!)
+                    : null,
+                child: appState.avatarUrl == null
+                    ? Icon(
+                        Icons.person_rounded,
+                        size: 20,
+                        color: colorScheme.onPrimaryContainer,
+                      )
+                    : null,
+              ),
+            ),
+          ),
           IconButton.filledTonal(
             icon: const Icon(Icons.settings),
             onPressed: () => Navigator.push(

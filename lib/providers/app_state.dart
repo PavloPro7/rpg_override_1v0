@@ -12,6 +12,9 @@ class AppState extends ChangeNotifier {
 
   List<Skill> _skills = [];
   List<Task> _tasks = [];
+  String? _userName;
+  int? _userAge;
+  String? _avatarUrl;
   final _uuid = const Uuid();
   ThemeMode _themeMode = ThemeMode.system;
 
@@ -24,6 +27,9 @@ class AppState extends ChangeNotifier {
       } else {
         _skills = _initialSkills();
         _tasks = [];
+        _userName = null;
+        _userAge = null;
+        _avatarUrl = null;
         notifyListeners();
       }
     });
@@ -66,6 +72,10 @@ class AppState extends ChangeNotifier {
   List<Task> get tasks => _tasks;
   ThemeMode get themeMode => _themeMode;
   User? get currentUser => _user;
+  String? get userName => _userName;
+  int? get userAge => _userAge;
+  String? get avatarUrl => _avatarUrl;
+  DateTime? get registrationDate => _user?.metadata.creationTime;
   bool get isAuthenticated => _user != null;
 
   void toggleTheme(bool isDark) {
@@ -82,12 +92,31 @@ class AppState extends ChangeNotifier {
   }
 
   // Auth Methods
-  Future<String?> signUp(String email, String password) async {
+  Future<String?> signUp(
+    String email,
+    String password,
+    String name,
+    int age,
+    String? avatarUrl,
+  ) async {
     try {
-      await _auth.createUserWithEmailAndPassword(
+      final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+
+      if (credential.user != null) {
+        await _firestore.collection('users').doc(credential.user!.uid).set({
+          'name': name,
+          'age': age,
+          'avatarUrl': avatarUrl,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        _userName = name;
+        _userAge = age;
+        _avatarUrl = avatarUrl;
+        notifyListeners();
+      }
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
@@ -103,6 +132,24 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<String?> updateProfile(String name, int age, String? avatarUrl) async {
+    if (_user == null) return "No user logged in";
+    try {
+      await _firestore.collection('users').doc(_user!.uid).set({
+        'name': name,
+        'age': age,
+        'avatarUrl': avatarUrl,
+      }, SetOptions(merge: true));
+      _userName = name;
+      _userAge = age;
+      _avatarUrl = avatarUrl;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return e.toString();
+    }
+  }
+
   Future<void> signOut() async {
     await _auth.signOut();
   }
@@ -111,6 +158,15 @@ class AppState extends ChangeNotifier {
     if (_user == null) return;
 
     final userDoc = _firestore.collection('users').doc(_user!.uid);
+
+    // Load user profile
+    final userSnapshot = await userDoc.get();
+    if (userSnapshot.exists) {
+      final userData = userSnapshot.data();
+      _userName = userData?['name'] as String?;
+      _userAge = userData?['age'] as int?;
+      _avatarUrl = userData?['avatarUrl'] as String?;
+    }
 
     // Load skills
     final skillsSnapshot = await userDoc.collection('skills').get();
