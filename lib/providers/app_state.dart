@@ -40,34 +40,40 @@ class AppState extends ChangeNotifier {
 
   List<Skill> _initialSkills() => [
     Skill(
-      id: 'strength',
-      name: 'Strength',
-      category: 'Fitness',
-      color: Colors.orangeAccent,
-    ),
-    Skill(
-      id: 'programming',
-      name: 'Programming',
-      category: 'Development',
-      color: Colors.greenAccent,
-    ),
-    Skill(
-      id: 'ausbildung',
-      name: 'Ausbildung',
-      category: 'Career',
-      color: Colors.redAccent,
-    ),
-    Skill(
-      id: 'deutsch',
-      name: 'Deutsch',
-      category: 'Language',
-      color: Colors.blueAccent,
-    ),
-    Skill(
       id: 'english',
       name: 'English',
       category: 'Language',
       color: Colors.blueAccent,
+      icon: '🇺🇸',
+      difficulty: 4.0,
+      xp: 1200.0, // (Level 4 - 1) * (100 * Difficulty 4)
+    ),
+    Skill(
+      id: 'education',
+      name: 'Education',
+      category: 'Career',
+      color: Colors.redAccent,
+      icon: '🎒',
+      difficulty: 4.0,
+      xp: 1200.0,
+    ),
+    Skill(
+      id: 'strength',
+      name: 'Strengh',
+      category: 'Fitness',
+      color: Colors.orangeAccent,
+      icon: '💪',
+      difficulty: 4.0,
+      xp: 1200.0,
+    ),
+    Skill(
+      id: 'german',
+      name: 'German',
+      category: 'Language',
+      color: Colors.blueAccent,
+      icon: '🇩🇪',
+      difficulty: 4.0,
+      xp: 1200.0,
     ),
   ];
 
@@ -86,6 +92,25 @@ class AppState extends ChangeNotifier {
   }
 
   bool get isAuthenticated => _user != null;
+  bool get isEmailVerified => _user?.emailVerified ?? false;
+  bool get isAnonymous => _user?.isAnonymous ?? false;
+
+  Future<void> reloadUser() async {
+    await _user?.reload();
+    _user = _auth.currentUser;
+    notifyListeners();
+  }
+
+  Future<String?> sendEmailVerification() async {
+    try {
+      await _user?.sendEmailVerification();
+      debugPrint('Verification email sent to: ${_user?.email}');
+      return null;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Error sending verification email: ${e.message}');
+      return e.message;
+    }
+  }
 
   void toggleTheme(bool isDark) {
     _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
@@ -130,6 +155,7 @@ class AppState extends ChangeNotifier {
       );
 
       if (credential.user != null) {
+        await credential.user!.sendEmailVerification();
         await credential.user!.updateDisplayName(name);
         await _firestore.collection('users').doc(credential.user!.uid).set({
           'name': name,
@@ -153,6 +179,15 @@ class AppState extends ChangeNotifier {
   Future<String?> signIn(String email, String password) async {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    }
+  }
+
+  Future<String?> signInAnonymously() async {
+    try {
+      await _auth.signInAnonymously();
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;

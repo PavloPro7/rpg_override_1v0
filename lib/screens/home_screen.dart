@@ -1,4 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_state.dart';
+import '../widgets/verification_dialog.dart';
 import 'dashboard_screen.dart';
 import 'skills_screen.dart';
 import 'task_list.dart';
@@ -14,6 +18,32 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  Timer? _verificationTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startVerificationTimer();
+  }
+
+  @override
+  void dispose() {
+    _verificationTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startVerificationTimer() {
+    final appState = context.read<AppState>();
+    if (appState.isAuthenticated &&
+        !appState.isAnonymous &&
+        !appState.isEmailVerified) {
+      _verificationTimer = Timer(const Duration(seconds: 30), () {
+        if (mounted && !appState.isEmailVerified) {
+          VerificationDialog.show(context);
+        }
+      });
+    }
+  }
 
   List<Widget> get _pages => [
     DashboardScreen(onProfileTap: () => setState(() => _selectedIndex = 3)),
