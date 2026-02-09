@@ -314,8 +314,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                       );
                                     }
-                                    if (mounted)
+                                    if (mounted) {
                                       setState(() => _isLoading = false);
+                                    }
                                   },
                             icon: const Icon(
                               Icons.person_outline_rounded,

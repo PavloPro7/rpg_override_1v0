@@ -14,15 +14,24 @@ class TodayTasksScreen extends StatefulWidget {
 }
 
 class _TodayTasksScreenState extends State<TodayTasksScreen> {
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate;
   bool _isCompletedExpanded = false;
+  bool _isStarredView = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = DateUtils.dateOnly(DateTime.now());
+  }
 
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final colorScheme = Theme.of(context).colorScheme;
 
-    final tasksForDate = appState.getTasksForDate(_selectedDate);
+    final tasksForDate = _isStarredView
+        ? appState.tasks.where((t) => t.isStarred).toList()
+        : appState.getTasksForDate(_selectedDate);
     final activeTasks = tasksForDate.where((t) => !t.isCompleted).toList();
     final completedTasks = tasksForDate.where((t) => t.isCompleted).toList();
 
@@ -81,9 +90,9 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
   Widget _buildDateSelector(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    // Generate dates around today
+    // Generate dates around the selected date - all normalized to midnight
     final dates = List.generate(7, (index) {
-      return DateTime.now().add(Duration(days: index - 2));
+      return _selectedDate.add(Duration(days: index - 3));
     });
 
     return Container(
@@ -91,17 +100,36 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: dates.length + 1, // +1 for "New list"
+        itemCount: dates.length + 2, // Star + Dates + Calendar
         itemBuilder: (context, index) {
-          if (index < dates.length) {
-            final date = dates[index];
-            final isSelected = DateUtils.isSameDay(date, _selectedDate);
+          if (index == 0) {
+            // Star Icon for Starred View
+            return Padding(
+              padding: const EdgeInsets.only(right: 24.0),
+              child: IconButton(
+                onPressed: () => setState(() => _isStarredView = true),
+                icon: Icon(
+                  Icons.star,
+                  color: _isStarredView
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                ),
+                tooltip: 'Starred Tasks',
+              ),
+            );
+          } else if (index <= dates.length) {
+            final date = dates[index - 1];
+            final isSelected =
+                !_isStarredView && DateUtils.isSameDay(date, _selectedDate);
             final label = _getDateLabel(date);
 
             return Padding(
               padding: const EdgeInsets.only(right: 24.0),
               child: InkWell(
-                onTap: () => setState(() => _selectedDate = date),
+                onTap: () => setState(() {
+                  _selectedDate = date;
+                  _isStarredView = false;
+                }),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -131,10 +159,23 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
               ),
             );
           } else {
-            return TextButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('New list'),
+            return IconButton(
+              onPressed: () async {
+                final DateTime? picked = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null && picked != _selectedDate) {
+                  setState(() {
+                    _selectedDate = DateUtils.dateOnly(picked);
+                    _isStarredView = false;
+                  });
+                }
+              },
+              icon: const Icon(Icons.calendar_month),
+              tooltip: 'Select date',
             );
           }
         },
@@ -143,9 +184,6 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
   }
 
   String _getDateLabel(DateTime date) {
-    if (DateUtils.isSameDay(date, DateTime.now())) {
-      return DateFormat('d.MM').format(date);
-    }
     return DateFormat('d.MM').format(date);
   }
 
@@ -169,9 +207,19 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
             child: Column(
               children: [
                 if (activeTasks.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: Center(child: Text('No tasks for this day')),
+                  Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Center(
+                      child: Text(
+                        _isStarredView
+                            ? (completedTasks.isEmpty
+                                  ? 'No starred tasks'
+                                  : 'No active starred tasks')
+                            : (completedTasks.isEmpty
+                                  ? 'No tasks for this day'
+                                  : 'No active tasks for this day'),
+                      ),
+                    ),
                   )
                 else
                   ...activeTasks.map((task) => _buildTaskTile(context, task)),
@@ -240,7 +288,13 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
         ),
       ),
       trailing: !task.isCompleted
-          ? const Icon(Icons.star_border, color: Colors.grey)
+          ? IconButton(
+              icon: Icon(
+                task.isStarred ? Icons.star : Icons.star_border,
+                color: task.isStarred ? Colors.amber : Colors.grey,
+              ),
+              onPressed: () => appState.toggleStar(task.id),
+            )
           : null,
     );
   }
@@ -269,7 +323,12 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
   }
 
   void _showMoveTaskDialog(BuildContext context, Task task) {
-    // Basic dialog to pick a new date
+    final prevDay = task.date.subtract(const Duration(days: 1));
+    final nextDay = task.date.add(const Duration(days: 1));
+
+    final prevLabel = _getDateLabel(prevDay);
+    final nextLabel = _getDateLabel(nextDay);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -278,11 +337,17 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              final newDate = DateTime.now().add(const Duration(days: 1));
-              context.read<AppState>().updateTaskDate(task.id, newDate);
+              context.read<AppState>().updateTaskDate(task.id, prevDay);
               Navigator.pop(context);
             },
-            child: const Text('Move to Tomorrow'),
+            child: Text('Move to $prevLabel'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.read<AppState>().updateTaskDate(task.id, nextDay);
+              Navigator.pop(context);
+            },
+            child: Text('Move to $nextLabel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context),

@@ -311,7 +311,7 @@ class AppState extends ChangeNotifier {
       id: _uuid.v4(),
       title: title,
       skillId: skillId,
-      date: date ?? DateTime.now(),
+      date: DateUtils.dateOnly(date ?? DateTime.now()),
     );
     _tasks.add(newTask);
     notifyListeners();
@@ -328,7 +328,8 @@ class AppState extends ChangeNotifier {
     if (_user == null) return;
     final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
     if (taskIndex != -1) {
-      _tasks[taskIndex] = _tasks[taskIndex].copyWith(date: newDate);
+      final normalizedDate = DateUtils.dateOnly(newDate);
+      _tasks[taskIndex] = _tasks[taskIndex].copyWith(date: normalizedDate);
       notifyListeners();
 
       await _firestore
@@ -336,7 +337,7 @@ class AppState extends ChangeNotifier {
           .doc(_user!.uid)
           .collection('tasks')
           .doc(taskId)
-          .update({'date': newDate.toIso8601String()});
+          .update({'date': normalizedDate.toIso8601String()});
     }
   }
 
@@ -425,6 +426,22 @@ class AppState extends ChangeNotifier {
             .update({'xp': _skills[skillIndex].xp});
       }
       notifyListeners();
+    }
+  }
+
+  Future<void> toggleStar(String taskId) async {
+    if (_user == null) return;
+    final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
+    if (taskIndex != -1) {
+      _tasks[taskIndex].isStarred = !_tasks[taskIndex].isStarred;
+      notifyListeners();
+
+      await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('tasks')
+          .doc(taskId)
+          .update({'isStarred': _tasks[taskIndex].isStarred});
     }
   }
 

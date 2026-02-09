@@ -4,6 +4,7 @@ class Task {
   final String skillId;
   final DateTime date;
   bool isCompleted;
+  bool isStarred;
 
   Task({
     required this.id,
@@ -11,6 +12,7 @@ class Task {
     required this.skillId,
     required this.date,
     this.isCompleted = false,
+    this.isStarred = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +22,7 @@ class Task {
       'skillId': skillId,
       'date': date.toIso8601String(),
       'isCompleted': isCompleted,
+      'isStarred': isStarred,
     };
   }
 
@@ -30,6 +33,7 @@ class Task {
       skillId: map['skillId'] ?? '',
       date: DateTime.parse(map['date'] ?? DateTime.now().toIso8601String()),
       isCompleted: map['isCompleted'] ?? false,
+      isStarred: map['isStarred'] ?? false,
     );
   }
 
@@ -39,6 +43,7 @@ class Task {
     String? skillId,
     DateTime? date,
     bool? isCompleted,
+    bool? isStarred,
   }) {
     return Task(
       id: id ?? this.id,
@@ -46,6 +51,7 @@ class Task {
       skillId: skillId ?? this.skillId,
       date: date ?? this.date,
       isCompleted: isCompleted ?? this.isCompleted,
+      isStarred: isStarred ?? this.isStarred,
     );
   }
 }
