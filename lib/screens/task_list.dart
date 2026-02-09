@@ -3,11 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/app_state.dart';
 import '../models/task.dart';
-import 'settings_screen.dart';
 
 class TodayTasksScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
-  const TodayTasksScreen({super.key, this.onProfileTap});
+  final VoidCallback? onSettingsTap;
+  const TodayTasksScreen({super.key, this.onProfileTap, this.onSettingsTap});
 
   @override
   State<TodayTasksScreen> createState() => _TodayTasksScreenState();
@@ -140,12 +140,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
               centerTitle: true,
               leading: IconButton(
                 icon: const Icon(Icons.settings),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SettingsScreen(),
-                  ),
-                ),
+                onPressed: widget.onSettingsTap,
               ),
               actions: [
                 Padding(

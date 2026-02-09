@@ -431,23 +431,21 @@ class AppState extends ChangeNotifier {
     final task = _tasks[taskIndex];
     final date = onDate ?? DateTime.now();
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    final skillIndex = _skills.indexWhere((s) => s.id == task.skillId);
 
     if (task.isPinned) {
       // Toggle completion for specific day
       if (task.completedDates.contains(dateStr)) {
         task.completedDates.remove(dateStr);
+        // Undo XP reward
+        if (skillIndex != -1) {
+          _skills[skillIndex].addXp(-10.0);
+        }
       } else {
         task.completedDates.add(dateStr);
-        // Add XP only when completing for the first time today
-        final skillIndex = _skills.indexWhere((s) => s.id == task.skillId);
+        // Add XP reward
         if (skillIndex != -1) {
           _skills[skillIndex].addXp(10.0);
-          await _firestore
-              .collection('users')
-              .doc(_user!.uid)
-              .collection('skills')
-              .doc(_skills[skillIndex].id)
-              .update({'xp': _skills[skillIndex].xp});
         }
       }
 
@@ -459,19 +457,25 @@ class AppState extends ChangeNotifier {
           .collection('tasks')
           .doc(taskId)
           .update({'completedDates': task.completedDates});
-    } else if (!task.isCompleted) {
-      task.isCompleted = true;
 
-      final skillIndex = _skills.indexWhere((s) => s.id == task.skillId);
       if (skillIndex != -1) {
-        _skills[skillIndex].addXp(10.0);
-
         await _firestore
             .collection('users')
             .doc(_user!.uid)
-            .collection('tasks')
-            .doc(taskId)
-            .update({'isCompleted': true});
+            .collection('skills')
+            .doc(_skills[skillIndex].id)
+            .update({'xp': _skills[skillIndex].xp});
+      }
+    } else {
+      // Toggle regular task completion
+      task.isCompleted = !task.isCompleted;
+
+      if (skillIndex != -1) {
+        if (task.isCompleted) {
+          _skills[skillIndex].addXp(10.0);
+        } else {
+          _skills[skillIndex].addXp(-10.0);
+        }
 
         await _firestore
             .collection('users')
@@ -480,6 +484,14 @@ class AppState extends ChangeNotifier {
             .doc(_skills[skillIndex].id)
             .update({'xp': _skills[skillIndex].xp});
       }
+
+      await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('tasks')
+          .doc(taskId)
+          .update({'isCompleted': task.isCompleted});
+
       notifyListeners();
     }
   }
