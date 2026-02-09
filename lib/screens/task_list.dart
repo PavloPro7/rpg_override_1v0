@@ -17,11 +17,33 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
   late DateTime _selectedDate;
   bool _isCompletedExpanded = false;
   bool _isStarredView = false;
+  final ScrollController _dateScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _selectedDate = DateUtils.dateOnly(DateTime.now());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _centerSelectedDate());
+  }
+
+  @override
+  void dispose() {
+    _dateScrollController.dispose();
+    super.dispose();
+  }
+
+  void _centerSelectedDate() {
+    if (_dateScrollController.hasClients) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      final itemWidth = (screenWidth - 32) / 7;
+      // Scroll to exactly 1 item width to hide the Star icon (index 0)
+      // and center index 4 (the selected date) perfectly.
+      _dateScrollController.animateTo(
+        itemWidth,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   @override
@@ -89,6 +111,8 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
 
   Widget _buildDateSelector(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final itemWidth = (screenWidth - 32) / 7;
 
     // Generate dates around the selected date - all normalized to midnight
     final dates = List.generate(7, (index) {
@@ -99,22 +123,26 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
       height: 48,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
+        controller: _dateScrollController,
         scrollDirection: Axis.horizontal,
         itemCount: dates.length + 2, // Star + Dates + Calendar
         itemBuilder: (context, index) {
           if (index == 0) {
             // Star Icon for Starred View
-            return Padding(
-              padding: const EdgeInsets.only(right: 24.0),
-              child: IconButton(
-                onPressed: () => setState(() => _isStarredView = true),
-                icon: Icon(
-                  Icons.star,
-                  color: _isStarredView
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
+            return SizedBox(
+              width: itemWidth,
+              child: Center(
+                child: IconButton(
+                  onPressed: () => setState(() => _isStarredView = true),
+                  icon: Icon(
+                    Icons.star,
+                    color: _isStarredView
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                  tooltip: 'Starred Tasks',
+                  padding: EdgeInsets.zero,
                 ),
-                tooltip: 'Starred Tasks',
               ),
             );
           } else if (index <= dates.length) {
@@ -123,8 +151,8 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                 !_isStarredView && DateUtils.isSameDay(date, _selectedDate);
             final label = _getDateLabel(date);
 
-            return Padding(
-              padding: const EdgeInsets.only(right: 24.0),
+            return SizedBox(
+              width: itemWidth,
               child: InkWell(
                 onTap: () => setState(() {
                   _selectedDate = date;
@@ -159,23 +187,30 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
               ),
             );
           } else {
-            return IconButton(
-              onPressed: () async {
-                final DateTime? picked = await showDatePicker(
-                  context: context,
-                  initialDate: _selectedDate,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                );
-                if (picked != null && picked != _selectedDate) {
-                  setState(() {
-                    _selectedDate = DateUtils.dateOnly(picked);
-                    _isStarredView = false;
-                  });
-                }
-              },
-              icon: const Icon(Icons.calendar_month),
-              tooltip: 'Select date',
+            // Calendar Icon for Date Picker
+            return SizedBox(
+              width: itemWidth,
+              child: Center(
+                child: IconButton(
+                  onPressed: () async {
+                    final DateTime? picked = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null && picked != _selectedDate) {
+                      setState(() {
+                        _selectedDate = DateUtils.dateOnly(picked);
+                        _isStarredView = false;
+                      });
+                    }
+                  },
+                  icon: const Icon(Icons.calendar_month),
+                  tooltip: 'Select date',
+                  padding: EdgeInsets.zero,
+                ),
+              ),
             );
           }
         },
