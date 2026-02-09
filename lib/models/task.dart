@@ -5,6 +5,8 @@ class Task {
   final DateTime date;
   bool isCompleted;
   bool isStarred;
+  bool isPinned;
+  List<String> completedDates;
 
   Task({
     required this.id,
@@ -13,6 +15,8 @@ class Task {
     required this.date,
     this.isCompleted = false,
     this.isStarred = false,
+    this.isPinned = false,
+    this.completedDates = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +27,8 @@ class Task {
       'date': date.toIso8601String(),
       'isCompleted': isCompleted,
       'isStarred': isStarred,
+      'isPinned': isPinned,
+      'completedDates': completedDates,
     };
   }
 
@@ -34,6 +40,8 @@ class Task {
       date: DateTime.parse(map['date'] ?? DateTime.now().toIso8601String()),
       isCompleted: map['isCompleted'] ?? false,
       isStarred: map['isStarred'] ?? false,
+      isPinned: map['isPinned'] ?? false,
+      completedDates: List<String>.from(map['completedDates'] ?? []),
     );
   }
 
@@ -44,6 +52,8 @@ class Task {
     DateTime? date,
     bool? isCompleted,
     bool? isStarred,
+    bool? isPinned,
+    List<String>? completedDates,
   }) {
     return Task(
       id: id ?? this.id,
@@ -52,6 +62,8 @@ class Task {
       date: date ?? this.date,
       isCompleted: isCompleted ?? this.isCompleted,
       isStarred: isStarred ?? this.isStarred,
+      isPinned: isPinned ?? this.isPinned,
+      completedDates: completedDates ?? this.completedDates,
     );
   }
 }

@@ -18,6 +18,9 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
   bool _isCompletedExpanded = false;
   bool _isStarredView = false;
   final ScrollController _dateScrollController = ScrollController();
+  final Set<String> _selectedTaskIds = {};
+
+  bool get _isSelectionMode => _selectedTaskIds.isNotEmpty;
 
   @override
   void initState() {
@@ -54,47 +57,119 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     final tasksForDate = _isStarredView
         ? appState.tasks.where((t) => t.isStarred).toList()
         : appState.getTasksForDate(_selectedDate);
-    final activeTasks = tasksForDate.where((t) => !t.isCompleted).toList();
-    final completedTasks = tasksForDate.where((t) => t.isCompleted).toList();
+    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+
+    final activeTasks = tasksForDate.where((t) {
+      if (t.isPinned) return !t.completedDates.contains(dateStr);
+      return !t.isCompleted;
+    }).toList();
+
+    final completedTasks = tasksForDate.where((t) {
+      if (t.isPinned) return t.completedDates.contains(dateStr);
+      return t.isCompleted;
+    }).toList();
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: const Text(
-          'Tasks',
-          style: TextStyle(fontWeight: FontWeight.w500),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.settings),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const SettingsScreen()),
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: InkWell(
-              onTap: widget.onProfileTap,
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: colorScheme.primaryContainer,
-                backgroundImage: appState.avatarUrl != null
-                    ? NetworkImage(appState.avatarUrl!)
-                    : null,
-                child: appState.avatarUrl == null
-                    ? Icon(
-                        Icons.person_rounded,
-                        size: 20,
-                        color: colorScheme.onPrimaryContainer,
-                      )
-                    : null,
+      appBar: _isSelectionMode
+          ? AppBar(
+              backgroundColor: Colors.black, // Darker, Telegram-style
+              elevation: 0,
+              leading: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => setState(() => _selectedTaskIds.clear()),
               ),
+              title: Text(
+                '${_selectedTaskIds.length}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.push_pin_outlined,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    final selectedTasks = appState.tasks.where(
+                      (t) => _selectedTaskIds.contains(t.id),
+                    );
+                    final allPinned = selectedTasks.every((t) => t.isPinned);
+                    appState.togglePinTasks(
+                      _selectedTaskIds.toList(),
+                      !allPinned,
+                    );
+                    setState(() => _selectedTaskIds.clear());
+                  },
+                  tooltip: 'Toggle Pin',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.star_outline, color: Colors.white),
+                  onPressed: () {
+                    final selectedTasks = appState.tasks.where(
+                      (t) => _selectedTaskIds.contains(t.id),
+                    );
+                    final allStarred = selectedTasks.every((t) => t.isStarred);
+                    appState.toggleStarTasks(
+                      _selectedTaskIds.toList(),
+                      !allStarred,
+                    );
+                    setState(() => _selectedTaskIds.clear());
+                  },
+                  tooltip: 'Toggle Star',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.white),
+                  onPressed: () {
+                    appState.deleteTasks(_selectedTaskIds.toList());
+                    setState(() => _selectedTaskIds.clear());
+                  },
+                  tooltip: 'Delete selected',
+                ),
+                const SizedBox(width: 8),
+              ],
+            )
+          : AppBar(
+              title: const Text(
+                'Tasks',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              centerTitle: true,
+              leading: IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsScreen(),
+                  ),
+                ),
+              ),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: InkWell(
+                    onTap: widget.onProfileTap,
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: colorScheme.primaryContainer,
+                      backgroundImage: appState.avatarUrl != null
+                          ? NetworkImage(appState.avatarUrl!)
+                          : null,
+                      child: appState.avatarUrl == null
+                          ? Icon(
+                              Icons.person_rounded,
+                              size: 20,
+                              color: colorScheme.onPrimaryContainer,
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
       body: Column(
         children: [
           _buildDateSelector(context),
@@ -128,24 +203,25 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
         itemCount: dates.length + 2, // Star + Dates + Calendar
         itemBuilder: (context, index) {
           if (index == 0) {
-            // Star Icon for Starred View
+            // Restore Starred View icon at the start
             return SizedBox(
               width: itemWidth,
               child: Center(
                 child: IconButton(
-                  onPressed: () => setState(() => _isStarredView = true),
+                  onPressed: () =>
+                      setState(() => _isStarredView = !_isStarredView),
                   icon: Icon(
-                    Icons.star,
+                    _isStarredView ? Icons.star : Icons.star_border,
                     color: _isStarredView
-                        ? colorScheme.primary
+                        ? Colors.amber
                         : colorScheme.onSurfaceVariant,
                   ),
-                  tooltip: 'Starred Tasks',
+                  tooltip: 'Starred (Saved) Tasks',
                   padding: EdgeInsets.zero,
                 ),
               ),
             );
-          } else if (index <= dates.length) {
+          } else if (index < dates.length + 1) {
             final date = dates[index - 1];
             final isSelected =
                 !_isStarredView && DateUtils.isSameDay(date, _selectedDate);
@@ -236,7 +312,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -282,55 +358,118 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
       orElse: () => appState.skills.first,
     );
 
-    return ListTile(
-      horizontalTitleGap: 8,
-      leading: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: Icon(
-              task.isCompleted
-                  ? Icons.check_circle
-                  : Icons.radio_button_unchecked,
-              color: task.isCompleted ? Colors.green : skill.color,
-              size: 28,
-            ),
-            onPressed: () => appState.completeTask(task.id),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+    final colorScheme = Theme.of(context).colorScheme;
+    final isSelected = _selectedTaskIds.contains(task.id);
+    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+    final isDone = task.isPinned
+        ? task.completedDates.contains(dateStr)
+        : task.isCompleted;
+
+    return InkWell(
+      onLongPress: () {
+        setState(() {
+          if (isSelected) {
+            _selectedTaskIds.remove(task.id);
+          } else {
+            _selectedTaskIds.add(task.id);
+          }
+        });
+      },
+      onTap: _isSelectionMode
+          ? () {
+              setState(() {
+                if (isSelected) {
+                  _selectedTaskIds.remove(task.id);
+                } else {
+                  _selectedTaskIds.add(task.id);
+                }
+              });
+            }
+          : null,
+      child: Container(
+        color: isSelected ? colorScheme.primary.withOpacity(0.15) : null,
+        child: ListTile(
+          horizontalTitleGap: 8,
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(
+                  isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: isDone ? Colors.green : skill.color,
+                  size: 28,
+                ),
+                onPressed: _isSelectionMode
+                    ? null
+                    : () =>
+                          appState.completeTask(task.id, onDate: _selectedDate),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              const SizedBox(width: 2),
+              Visibility(
+                visible: !isDone,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.swap_horiz,
+                    size: 20,
+                    color: Colors.grey,
+                  ),
+                  onPressed: (_isSelectionMode || task.isPinned)
+                      ? null
+                      : () => _showMoveTaskDialog(context, task),
+                  tooltip: 'Move to another date',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 2),
-          Visibility(
-            visible: !task.isCompleted,
-            maintainSize: true,
-            maintainAnimation: true,
-            maintainState: true,
-            child: IconButton(
-              icon: const Icon(Icons.swap_horiz, size: 20, color: Colors.grey),
-              onPressed: () => _showMoveTaskDialog(context, task),
-              tooltip: 'Move to another date',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
+          title: Row(
+            children: [
+              if (task.isPinned) ...[
+                IconButton(
+                  icon: const Icon(
+                    Icons.push_pin,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
+                  onPressed: _isSelectionMode
+                      ? null
+                      : () => appState.togglePin(task.id),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: 'Unpin task',
+                ),
+                const SizedBox(width: 4),
+              ],
+              Expanded(
+                child: Text(
+                  task.title,
+                  style: TextStyle(
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                    color: isDone ? Colors.grey : null,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      title: Text(
-        task.title,
-        style: TextStyle(
-          decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-          color: task.isCompleted ? Colors.grey : null,
+          trailing: !isDone
+              ? IconButton(
+                  icon: Icon(
+                    task.isStarred ? Icons.star : Icons.star_border,
+                    color: task.isStarred ? Colors.amber : Colors.grey,
+                  ),
+                  onPressed: _isSelectionMode
+                      ? null
+                      : () => appState.toggleStar(task.id),
+                )
+              : null,
         ),
       ),
-      trailing: !task.isCompleted
-          ? IconButton(
-              icon: Icon(
-                task.isStarred ? Icons.star : Icons.star_border,
-                color: task.isStarred ? Colors.amber : Colors.grey,
-              ),
-              onPressed: () => appState.toggleStar(task.id),
-            )
-          : null,
     );
   }
 

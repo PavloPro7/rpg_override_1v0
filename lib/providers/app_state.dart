@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
@@ -133,9 +134,11 @@ class AppState extends ChangeNotifier {
 
   List<Task> getTasksForDate(DateTime date) {
     return _tasks.where((t) {
-      return t.date.year == date.year &&
-          t.date.month == date.month &&
-          t.date.day == date.day;
+      if (t.isPinned) {
+        // Only show pinned tasks on or after their assigned date
+        return date.isAfter(t.date) || DateUtils.isSameDay(date, t.date);
+      }
+      return DateUtils.isSameDay(t.date, date);
     }).toList();
   }
 
@@ -312,6 +315,8 @@ class AppState extends ChangeNotifier {
       title: title,
       skillId: skillId,
       date: DateUtils.dateOnly(date ?? DateTime.now()),
+      isStarred: false,
+      isPinned: false,
     );
     _tasks.add(newTask);
     notifyListeners();
@@ -322,6 +327,26 @@ class AppState extends ChangeNotifier {
         .collection('tasks')
         .doc(newTask.id)
         .set(newTask.toMap());
+  }
+
+  Future<void> deleteTasks(List<String> taskIds) async {
+    if (_user == null) return;
+
+    // Update local state
+    _tasks.removeWhere((t) => taskIds.contains(t.id));
+    notifyListeners();
+
+    // Update Firestore in batch
+    final batch = _firestore.batch();
+    final userTasksRef = _firestore
+        .collection('users')
+        .doc(_user!.uid)
+        .collection('tasks');
+
+    for (final id in taskIds) {
+      batch.delete(userTasksRef.doc(id));
+    }
+    await batch.commit();
   }
 
   Future<void> updateTaskDate(String taskId, DateTime newDate) async {
@@ -398,16 +423,46 @@ class AppState extends ChangeNotifier {
         .delete();
   }
 
-  Future<void> completeTask(String taskId) async {
+  Future<void> completeTask(String taskId, {DateTime? onDate}) async {
     if (_user == null) return;
     final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
-    if (taskIndex != -1 && !_tasks[taskIndex].isCompleted) {
-      _tasks[taskIndex].isCompleted = true;
+    if (taskIndex == -1) return;
 
-      final skillIndex = _skills.indexWhere(
-        (s) => s.id == _tasks[taskIndex].skillId,
-      );
+    final task = _tasks[taskIndex];
+    final date = onDate ?? DateTime.now();
+    final dateStr = DateFormat('yyyy-MM-dd').format(date);
 
+    if (task.isPinned) {
+      // Toggle completion for specific day
+      if (task.completedDates.contains(dateStr)) {
+        task.completedDates.remove(dateStr);
+      } else {
+        task.completedDates.add(dateStr);
+        // Add XP only when completing for the first time today
+        final skillIndex = _skills.indexWhere((s) => s.id == task.skillId);
+        if (skillIndex != -1) {
+          _skills[skillIndex].addXp(10.0);
+          await _firestore
+              .collection('users')
+              .doc(_user!.uid)
+              .collection('skills')
+              .doc(_skills[skillIndex].id)
+              .update({'xp': _skills[skillIndex].xp});
+        }
+      }
+
+      notifyListeners();
+
+      await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('tasks')
+          .doc(taskId)
+          .update({'completedDates': task.completedDates});
+    } else if (!task.isCompleted) {
+      task.isCompleted = true;
+
+      final skillIndex = _skills.indexWhere((s) => s.id == task.skillId);
       if (skillIndex != -1) {
         _skills[skillIndex].addXp(10.0);
 
@@ -429,6 +484,43 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<void> togglePin(String taskId) async {
+    if (_user == null) return;
+    final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
+    if (taskIndex != -1) {
+      _tasks[taskIndex].isPinned = !_tasks[taskIndex].isPinned;
+      notifyListeners();
+
+      await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('tasks')
+          .doc(taskId)
+          .update({'isPinned': _tasks[taskIndex].isPinned});
+    }
+  }
+
+  Future<void> togglePinTasks(List<String> taskIds, bool pinned) async {
+    if (_user == null) return;
+
+    final batch = _firestore.batch();
+    final userTasksRef = _firestore
+        .collection('users')
+        .doc(_user!.uid)
+        .collection('tasks');
+
+    for (final id in taskIds) {
+      final index = _tasks.indexWhere((t) => t.id == id);
+      if (index != -1) {
+        _tasks[index].isPinned = pinned;
+        batch.update(userTasksRef.doc(id), {'isPinned': pinned});
+      }
+    }
+
+    notifyListeners();
+    await batch.commit();
+  }
+
   Future<void> toggleStar(String taskId) async {
     if (_user == null) return;
     final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
@@ -443,6 +535,27 @@ class AppState extends ChangeNotifier {
           .doc(taskId)
           .update({'isStarred': _tasks[taskIndex].isStarred});
     }
+  }
+
+  Future<void> toggleStarTasks(List<String> taskIds, bool starred) async {
+    if (_user == null) return;
+
+    final batch = _firestore.batch();
+    final userTasksRef = _firestore
+        .collection('users')
+        .doc(_user!.uid)
+        .collection('tasks');
+
+    for (final id in taskIds) {
+      final index = _tasks.indexWhere((t) => t.id == id);
+      if (index != -1) {
+        _tasks[index].isStarred = starred;
+        batch.update(userTasksRef.doc(id), {'isStarred': starred});
+      }
+    }
+
+    notifyListeners();
+    await batch.commit();
   }
 
   Future<void> applyDailyPenalty() async {
