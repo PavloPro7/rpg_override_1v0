@@ -43,6 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _isLoading = true);
+    final messenger = ScaffoldMessenger.of(context);
     final appState = context.read<AppState>();
     String? error;
 
@@ -60,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     if (mounted && error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
       );
     }
@@ -301,13 +302,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ? null
                                 : () async {
                                     setState(() => _isLoading = true);
+                                    final messenger = ScaffoldMessenger.of(
+                                      context,
+                                    );
                                     final error = await context
                                         .read<AppState>()
                                         .signInAnonymously();
                                     if (mounted && error != null) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
+                                      messenger.showSnackBar(
                                         SnackBar(
                                           content: Text(error),
                                           backgroundColor: Colors.redAccent,

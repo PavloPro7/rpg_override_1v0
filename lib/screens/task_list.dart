@@ -307,7 +307,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -382,7 +382,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
             }
           : null,
       child: Container(
-        color: isSelected ? colorScheme.primary.withOpacity(0.15) : null,
+        color: isSelected ? colorScheme.primary.withValues(alpha: 0.15) : null,
         child: ListTile(
           horizontalTitleGap: 8,
           leading: Row(
