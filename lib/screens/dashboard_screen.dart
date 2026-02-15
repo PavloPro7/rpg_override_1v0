@@ -3,10 +3,25 @@ import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../widgets/radar_chart.dart';
 import 'settings_screen.dart';
+import 'package:table_calendar/table_calendar.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
   const DashboardScreen({super.key, this.onProfileTap});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDay = _focusedDay;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +53,7 @@ class DashboardScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: InkWell(
-              onTap: onProfileTap,
+              onTap: widget.onProfileTap,
               child: CircleAvatar(
                 radius: 18,
                 backgroundColor: colorScheme.primaryContainer,
@@ -145,6 +160,78 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            _buildSectionHeader('Activity Calendar'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Card(
+                elevation: 0,
+                color: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.3,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TableCalendar(
+                    firstDay: DateTime.utc(2024, 1, 1),
+                    lastDay: DateTime.utc(2030, 12, 31),
+                    focusedDay: _focusedDay,
+                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                    onDaySelected: (selectedDay, focusedDay) {
+                      setState(() {
+                        _selectedDay = selectedDay;
+                        _focusedDay = focusedDay;
+                      });
+                    },
+                    calendarFormat: CalendarFormat.month,
+                    startingDayOfWeek: StartingDayOfWeek.monday,
+                    headerStyle: HeaderStyle(
+                      formatButtonVisible: false,
+                      titleCentered: true,
+                      titleTextStyle: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                      leftChevronIcon: Icon(
+                        Icons.chevron_left,
+                        color: colorScheme.primary,
+                      ),
+                      rightChevronIcon: Icon(
+                        Icons.chevron_right,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    calendarStyle: CalendarStyle(
+                      todayDecoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      selectedDecoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      markersAlignment: Alignment.bottomCenter,
+                      markerDecoration: BoxDecoration(
+                        color: colorScheme.secondary,
+                        shape: BoxShape.circle,
+                      ),
+                      todayTextStyle: TextStyle(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    eventLoader: (day) {
+                      return appState.tasks.where((task) {
+                        return isSameDay(task.date, day);
+                      }).toList();
+                    },
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 24),
