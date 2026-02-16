@@ -187,6 +187,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         _focusedDay = focusedDay;
                       });
                     },
+                    availableGestures: AvailableGestures.none,
                     calendarFormat: CalendarFormat.month,
                     startingDayOfWeek: StartingDayOfWeek.monday,
                     headerStyle: HeaderStyle(

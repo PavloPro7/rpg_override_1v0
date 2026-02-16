@@ -229,11 +229,10 @@ class SkillCard extends StatelessWidget {
                   child: Center(
                     child: Text(
                       '${(skill.progressInLevel * 100).toInt()}% OF LEVEL',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        shadows: [Shadow(color: Colors.black45, blurRadius: 2)],
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),

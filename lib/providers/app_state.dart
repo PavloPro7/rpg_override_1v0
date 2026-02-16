@@ -469,15 +469,15 @@ class AppState extends ChangeNotifier {
       // Toggle completion for specific day
       if (task.completedDates.contains(dateStr)) {
         task.completedDates.remove(dateStr);
-        // Undo XP reward
+        // Undo XP reward (Tripled: 10.0 * 3)
         if (skillIndex != -1) {
-          _skills[skillIndex].addXp(-10.0);
+          _skills[skillIndex].addXp(-30.0);
         }
       } else {
         task.completedDates.add(dateStr);
-        // Add XP reward
+        // Add XP reward (Tripled: 10.0 * 3)
         if (skillIndex != -1) {
-          _skills[skillIndex].addXp(10.0);
+          _skills[skillIndex].addXp(30.0);
         }
       }
 
@@ -504,9 +504,9 @@ class AppState extends ChangeNotifier {
 
       if (skillIndex != -1) {
         if (task.isCompleted) {
-          _skills[skillIndex].addXp(10.0);
+          _skills[skillIndex].addXp(30.0); // Tripled XP
         } else {
-          _skills[skillIndex].addXp(-10.0);
+          _skills[skillIndex].addXp(-30.0); // Tripled XP
         }
 
         await _firestore
