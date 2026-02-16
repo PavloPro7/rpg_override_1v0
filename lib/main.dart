@@ -5,6 +5,8 @@ import 'providers/app_state.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -13,6 +15,11 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    final prefs = await SharedPreferences.getInstance();
+    final staySignedIn = prefs.getBool('staySignedIn') ?? true;
+    if (!staySignedIn) {
+      await FirebaseAuth.instance.signOut();
+    }
   } catch (e) {
     // Firebase already initialized or error
     debugPrint('Firebase initialization info: $e');

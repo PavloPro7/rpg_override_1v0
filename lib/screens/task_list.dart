@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'dart:math' as math;
 import '../providers/app_state.dart';
 import '../models/task.dart';
 
@@ -19,6 +20,8 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
   bool _isStarredView = false;
   final ScrollController _dateScrollController = ScrollController();
   final Set<String> _selectedTaskIds = {};
+  final Set<String> _animatingTaskIds = {};
+  final Set<String> _fadingTaskIds = {};
 
   bool get _isSelectionMode => _selectedTaskIds.isNotEmpty;
 
@@ -310,35 +313,41 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
               color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(24),
             ),
-            child: Column(
-              children: [
-                if (activeTasks.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Center(
-                      child: Text(
-                        _isStarredView
-                            ? (completedTasks.isEmpty
-                                  ? 'No starred tasks'
-                                  : 'No active starred tasks')
-                            : (completedTasks.isEmpty
-                                  ? 'No tasks for this day'
-                                  : 'No active tasks for this day'),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 400),
+              child: Column(
+                key: ValueKey(
+                  '${_isStarredView}_${_selectedDate.toIso8601String()}',
+                ),
+                children: [
+                  if (activeTasks.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Center(
+                        child: Text(
+                          _isStarredView
+                              ? (completedTasks.isEmpty
+                                    ? 'No starred tasks'
+                                    : 'No active starred tasks')
+                              : (completedTasks.isEmpty
+                                    ? 'No tasks for this day'
+                                    : 'No active tasks for this day'),
+                        ),
                       ),
-                    ),
-                  )
-                else
-                  ...activeTasks.map((task) => _buildTaskTile(context, task)),
+                    )
+                  else
+                    ...activeTasks.map((task) => _buildTaskTile(context, task)),
 
-                if (completedTasks.isNotEmpty) ...[
-                  const Divider(height: 1),
-                  _buildCompletedHeader(context, completedTasks.length),
-                  if (_isCompletedExpanded)
-                    ...completedTasks.map(
-                      (task) => _buildTaskTile(context, task),
-                    ),
+                  if (completedTasks.isNotEmpty) ...[
+                    const Divider(height: 1),
+                    _buildCompletedHeader(context, completedTasks.length),
+                    if (_isCompletedExpanded)
+                      ...completedTasks.map(
+                        (task) => _buildTaskTile(context, task),
+                      ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ],
@@ -381,88 +390,165 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
               });
             }
           : null,
-      child: Container(
-        color: isSelected ? colorScheme.primary.withValues(alpha: 0.15) : null,
-        child: ListTile(
-          horizontalTitleGap: 8,
-          leading: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: Icon(
-                  isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-                  color: isDone ? Colors.green : skill.color,
-                  size: 28,
-                ),
-                onPressed: _isSelectionMode
-                    ? null
-                    : () =>
-                          appState.completeTask(task.id, onDate: _selectedDate),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              const SizedBox(width: 2),
-              Visibility(
-                visible: !isDone,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.swap_horiz,
-                    size: 20,
-                    color: Colors.grey,
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 400),
+          opacity: _fadingTaskIds.contains(task.id) ? 0.0 : 1.0,
+          child: _fadingTaskIds.contains(task.id) && !isSelected
+              ? const SizedBox(height: 0, width: double.infinity)
+              : Container(
+                  color: isSelected
+                      ? colorScheme.primary.withValues(alpha: 0.15)
+                      : null,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    horizontalTitleGap: 8,
+                    leading: Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.none,
+                      children: [
+                        if (_animatingTaskIds.contains(task.id) && !isDone)
+                          Positioned(
+                            child: Transform.translate(
+                              offset: const Offset(-24, 0),
+                              child: const SizedBox(
+                                width: 60,
+                                height: 60,
+                                child: CompletionBurst(),
+                              ),
+                            ),
+                          ),
+                        Opacity(
+                          opacity:
+                              (_animatingTaskIds.contains(task.id) && !isDone)
+                              ? 0.0
+                              : 1.0,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  isDone
+                                      ? Icons.check_circle
+                                      : Icons.radio_button_unchecked,
+                                  color: isDone ? Colors.green : skill.color,
+                                  size: 28,
+                                ),
+                                onPressed: _isSelectionMode
+                                    ? null
+                                    : () async {
+                                        if (!isDone) {
+                                          setState(
+                                            () =>
+                                                _animatingTaskIds.add(task.id),
+                                          );
+                                          // Wait for burst to happen a bit before fading
+                                          await Future.delayed(
+                                            const Duration(milliseconds: 350),
+                                          );
+                                          if (mounted) {
+                                            setState(
+                                              () => _fadingTaskIds.add(task.id),
+                                            );
+                                          }
+                                          await Future.delayed(
+                                            const Duration(milliseconds: 400),
+                                          );
+                                        }
+                                        if (mounted) {
+                                          appState.completeTask(
+                                            task.id,
+                                            onDate: _selectedDate,
+                                          );
+                                          setState(() {
+                                            _animatingTaskIds.remove(task.id);
+                                            _fadingTaskIds.remove(task.id);
+                                          });
+                                        }
+                                      },
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                              const SizedBox(width: 2),
+                              Visibility(
+                                visible: !isDone,
+                                maintainSize: true,
+                                maintainAnimation: true,
+                                maintainState: true,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.swap_horiz,
+                                    size: 20,
+                                    color: Colors.grey,
+                                  ),
+                                  onPressed: (_isSelectionMode || task.isPinned)
+                                      ? null
+                                      : () =>
+                                            _showMoveTaskDialog(context, task),
+                                  tooltip: 'Move to another date',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    title: Row(
+                      children: [
+                        if (task.isPinned) ...[
+                          IconButton(
+                            icon: const Icon(
+                              Icons.push_pin,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
+                            onPressed: _isSelectionMode
+                                ? null
+                                : () => appState.togglePin(task.id),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            tooltip: 'Unpin task',
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        Expanded(
+                          child: Text(
+                            task.title,
+                            style: TextStyle(
+                              decoration: isDone
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              color: isDone ? Colors.grey : null,
+                              fontWeight: task.title == skill.name
+                                  ? FontWeight.w600
+                                  : null,
+                              letterSpacing: task.title == skill.name
+                                  ? 1.2
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: !isDone
+                        ? IconButton(
+                            icon: Icon(
+                              task.isStarred ? Icons.star : Icons.star_border,
+                              color: task.isStarred
+                                  ? Colors.amber
+                                  : Colors.grey,
+                            ),
+                            onPressed: _isSelectionMode
+                                ? null
+                                : () => appState.toggleStar(task.id),
+                          )
+                        : null,
                   ),
-                  onPressed: (_isSelectionMode || task.isPinned)
-                      ? null
-                      : () => _showMoveTaskDialog(context, task),
-                  tooltip: 'Move to another date',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
                 ),
-              ),
-            ],
-          ),
-          title: Row(
-            children: [
-              if (task.isPinned) ...[
-                IconButton(
-                  icon: const Icon(
-                    Icons.push_pin,
-                    size: 16,
-                    color: Colors.grey,
-                  ),
-                  onPressed: _isSelectionMode
-                      ? null
-                      : () => appState.togglePin(task.id),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  tooltip: 'Unpin task',
-                ),
-                const SizedBox(width: 4),
-              ],
-              Expanded(
-                child: Text(
-                  task.title,
-                  style: TextStyle(
-                    decoration: isDone ? TextDecoration.lineThrough : null,
-                    color: isDone ? Colors.grey : null,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          trailing: !isDone
-              ? IconButton(
-                  icon: Icon(
-                    task.isStarred ? Icons.star : Icons.star_border,
-                    color: task.isStarred ? Colors.amber : Colors.grey,
-                  ),
-                  onPressed: _isSelectionMode
-                      ? null
-                      : () => appState.toggleStar(task.id),
-                )
-              : null,
         ),
       ),
     );
@@ -586,7 +672,13 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                               style: const TextStyle(fontSize: 16),
                             ),
                             const SizedBox(width: 12),
-                            Text(skill.name),
+                            Text(
+                              skill.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -605,10 +697,16 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
             ),
             FilledButton(
               onPressed: () {
-                if (titleController.text.isNotEmpty &&
-                    selectedSkillId != null) {
+                if (selectedSkillId != null) {
+                  final skill = appState.skills.firstWhere(
+                    (s) => s.id == selectedSkillId,
+                  );
+                  final taskTitle = titleController.text.trim().isEmpty
+                      ? skill.name
+                      : titleController.text.trim();
+
                   appState.addTask(
-                    titleController.text,
+                    taskTitle,
                     selectedSkillId!,
                     date: _selectedDate,
                   );
@@ -622,4 +720,101 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
       ),
     );
   }
+}
+
+class CompletionBurst extends StatefulWidget {
+  const CompletionBurst({super.key});
+
+  @override
+  State<CompletionBurst> createState() => _CompletionBurstState();
+}
+
+class _CompletionBurstState extends State<CompletionBurst>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(painter: BurstPainter(_controller.value));
+      },
+    );
+  }
+}
+
+class BurstPainter extends CustomPainter {
+  final double progress;
+  BurstPainter(this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final colors = [Colors.blue, Colors.red, Colors.yellow[700]!, Colors.green];
+
+    final paint = Paint()..strokeCap = StrokeCap.round;
+
+    // Draw Checkmark
+    final checkPaint = Paint()
+      ..color = Colors.white.withValues(
+        alpha: (1.0 - progress * 0.5).clamp(0.0, 1.0),
+      )
+      ..strokeWidth = 3.0
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final checkPath = Path();
+    // Centered checkmark relative to (0,0) after translation
+    checkPath.moveTo(-6, 0);
+    checkPath.lineTo(-2, 4);
+    checkPath.lineTo(6, -4);
+
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    // Draw the checkmark
+    canvas.drawPath(checkPath, checkPaint);
+
+    for (int i = 0; i < 8; i++) {
+      final double angle = (i * 45) * (math.pi / 180);
+      final color = colors[i % colors.length];
+
+      // Expand distance and length over progress
+      final double startDist = 12 + progress * 15;
+      final double length = 6 * (1.0 - progress);
+      final double particleOpacity = (1.0 - progress).clamp(0.0, 1.0);
+
+      paint.color = color.withValues(alpha: particleOpacity);
+      paint.strokeWidth = 3.0 * (1.0 - progress);
+
+      // Rotate and draw
+      final cos = math.cos(angle);
+      final sin = math.sin(angle);
+
+      final p1 = Offset(startDist * cos, startDist * sin);
+      final p2 = Offset((startDist + length) * cos, (startDist + length) * sin);
+
+      canvas.drawLine(p1, p2, paint);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant BurstPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }

@@ -202,7 +202,35 @@ class _LoginScreenState extends State<LoginScreen> {
                             keyboardType: TextInputType.number,
                           ),
                         ],
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 16),
+                        Consumer<AppState>(
+                          builder: (context, appState, child) => Row(
+                            children: [
+                              SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: Checkbox(
+                                  value: appState.staySignedIn,
+                                  onChanged: (val) =>
+                                      appState.setStaySignedIn(val ?? true),
+                                  activeColor: colorScheme.primary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Stay Signed in',
+                                style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
                           height: 56,

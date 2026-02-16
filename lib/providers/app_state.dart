@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/skill.dart';
 import '../models/task.dart';
 
@@ -20,8 +21,10 @@ class AppState extends ChangeNotifier {
   bool _isSigningUp = false;
   final _uuid = const Uuid();
   ThemeMode _themeMode = ThemeMode.system;
+  bool _staySignedIn = true;
 
   AppState() {
+    _loadPreferences();
     _skills = _initialSkills();
     _auth.authStateChanges().listen((user) {
       _user = user;
@@ -90,6 +93,24 @@ class AppState extends ChangeNotifier {
       return _registrationDateFromFirestore!.toUtc();
     }
     return _user?.metadata.creationTime?.toUtc();
+  }
+
+  bool get staySignedIn => _staySignedIn;
+
+  void setStaySignedIn(bool value) {
+    _staySignedIn = value;
+    notifyListeners();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    _staySignedIn = prefs.getBool('staySignedIn') ?? true;
+    notifyListeners();
+  }
+
+  Future<void> _savePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('staySignedIn', _staySignedIn);
   }
 
   bool get isAuthenticated => _user != null;
@@ -171,6 +192,7 @@ class AppState extends ChangeNotifier {
         _avatarUrl = avatarUrl;
         notifyListeners();
       }
+      await _savePreferences();
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
@@ -182,6 +204,7 @@ class AppState extends ChangeNotifier {
   Future<String?> signIn(String email, String password) async {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
+      await _savePreferences();
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
