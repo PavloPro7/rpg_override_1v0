@@ -18,6 +18,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _ageController = TextEditingController();
   bool _isLogin = true;
   bool _isLoading = false;
+  bool _showPassword = false;
+  bool _showConfirmPassword = false;
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
@@ -66,6 +68,69 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     }
     if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _showForgotPasswordDialog() async {
+    final emailController = TextEditingController(text: _emailController.text);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Enter your email and we\'ll send you a reset link.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(
+                labelText: 'Email',
+                prefixIcon: const Icon(Icons.email_outlined),
+                filled: true,
+                fillColor: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.3,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final email = emailController.text.trim();
+              if (email.isEmpty) return;
+
+              final messenger = ScaffoldMessenger.of(context);
+              final error = await context
+                  .read<AppState>()
+                  .sendPasswordResetEmail(email);
+
+              if (context.mounted) Navigator.pop(context);
+
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(error ?? 'Password reset link sent to $email'),
+                  backgroundColor: error != null
+                      ? Colors.redAccent
+                      : Colors.green,
+                ),
+              );
+            },
+            child: const Text('Send Reset Link'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -179,6 +244,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           label: 'Password',
                           icon: Icons.lock_outline_rounded,
                           isPassword: true,
+                          isPasswordVisible: _showPassword,
+                          onToggleVisibility: () =>
+                              setState(() => _showPassword = !_showPassword),
                         ),
                         if (!_isLogin) ...[
                           const SizedBox(height: 16),
@@ -187,6 +255,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             label: 'Repeat Password',
                             icon: Icons.lock_reset_rounded,
                             isPassword: true,
+                            isPasswordVisible: _showConfirmPassword,
+                            onToggleVisibility: () => setState(
+                              () =>
+                                  _showConfirmPassword = !_showConfirmPassword,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           _buildTextField(
@@ -205,28 +278,52 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 16),
                         Consumer<AppState>(
                           builder: (context, appState, child) => Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              SizedBox(
-                                height: 24,
-                                width: 24,
-                                child: Checkbox(
-                                  value: appState.staySignedIn,
-                                  onChanged: (val) =>
-                                      appState.setStaySignedIn(val ?? true),
-                                  activeColor: colorScheme.primary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: Checkbox(
+                                      value: appState.staySignedIn,
+                                      onChanged: (val) =>
+                                          appState.setStaySignedIn(val ?? true),
+                                      activeColor: colorScheme.primary,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Stay Signed in',
+                                    style: TextStyle(
+                                      color: colorScheme.onSurfaceVariant,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (_isLogin)
+                                TextButton(
+                                  onPressed: _showForgotPasswordDialog,
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    'Forgot Password?',
+                                    style: TextStyle(
+                                      color: colorScheme.primary,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Stay Signed in',
-                                style: TextStyle(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontSize: 14,
-                                ),
-                              ),
                             ],
                           ),
                         ),
@@ -387,16 +484,29 @@ class _LoginScreenState extends State<LoginScreen> {
     required String label,
     required IconData icon,
     bool isPassword = false,
+    bool? isPasswordVisible,
+    VoidCallback? onToggleVisibility,
     TextInputType? keyboardType,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return TextField(
       controller: controller,
-      obscureText: isPassword,
+      obscureText: isPassword && !(isPasswordVisible ?? false),
       keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, size: 22),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  (isPasswordVisible ?? false)
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  size: 22,
+                ),
+                onPressed: onToggleVisibility,
+              )
+            : null,
         filled: true,
         fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         border: OutlineInputBorder(

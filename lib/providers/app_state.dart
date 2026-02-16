@@ -220,6 +220,15 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<String?> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    }
+  }
+
   Future<String?> updateProfile(String name, int age, String? avatarUrl) async {
     if (_user == null) return "No user logged in";
     try {
