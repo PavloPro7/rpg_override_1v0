@@ -357,10 +357,15 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
 
   Widget _buildTaskTile(BuildContext context, Task task) {
     final appState = Provider.of<AppState>(context, listen: false);
-    final skill = appState.skills.firstWhere(
-      (s) => s.id == task.skillId,
-      orElse: () => appState.skills.first,
-    );
+    final taskSkillId = task.skillId;
+    final skill = taskSkillId == 'none'
+        ? null
+        : appState.skills.firstWhere(
+            (s) => s.id == taskSkillId,
+            orElse: () => appState.skills.first,
+          );
+
+    final skillColor = skill?.color ?? Colors.grey;
 
     final colorScheme = Theme.of(context).colorScheme;
     final isSelected = _selectedTaskIds.contains(task.id);
@@ -433,7 +438,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                                   isDone
                                       ? Icons.check_circle
                                       : Icons.radio_button_unchecked,
-                                  color: isDone ? Colors.green : skill.color,
+                                  color: isDone ? Colors.green : skillColor,
                                   size: 28,
                                 ),
                                 onPressed: _isSelectionMode
@@ -523,10 +528,12 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                                   ? TextDecoration.lineThrough
                                   : null,
                               color: isDone ? Colors.grey : null,
-                              fontWeight: task.title == skill.name
+                              fontWeight:
+                                  (skill != null && task.title == skill.name)
                                   ? FontWeight.w600
                                   : null,
-                              letterSpacing: task.title == skill.name
+                              letterSpacing:
+                                  (skill != null && task.title == skill.name)
                                   ? 1.2
                                   : null,
                             ),
@@ -618,9 +625,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     final appState = Provider.of<AppState>(context, listen: false);
 
     // Initial skill selection
-    String? selectedSkillId = appState.skills.isNotEmpty
-        ? appState.skills.first.id
-        : null;
+    String? selectedSkillId = 'none';
 
     showDialog(
       context: context,
@@ -662,27 +667,45 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                   child: DropdownButton<String>(
                     value: selectedSkillId,
                     isExpanded: true,
-                    items: appState.skills.map((skill) {
-                      return DropdownMenuItem(
-                        value: skill.id,
+                    items: [
+                      const DropdownMenuItem(
+                        value: 'none',
                         child: Row(
                           children: [
-                            Text(
-                              skill.icon,
-                              style: const TextStyle(fontSize: 16),
-                            ),
+                            Text('📝', style: TextStyle(fontSize: 16)),
                             const SizedBox(width: 12),
                             Text(
-                              skill.name,
-                              style: const TextStyle(
+                              'None / General',
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 letterSpacing: 1.2,
                               ),
                             ),
                           ],
                         ),
-                      );
-                    }).toList(),
+                      ),
+                      ...appState.skills.map((skill) {
+                        return DropdownMenuItem(
+                          value: skill.id,
+                          child: Row(
+                            children: [
+                              Text(
+                                skill.icon,
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                skill.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
                     onChanged: (value) =>
                         setDialogState(() => selectedSkillId = value),
                   ),
@@ -698,11 +721,13 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
             FilledButton(
               onPressed: () {
                 if (selectedSkillId != null) {
-                  final skill = appState.skills.firstWhere(
-                    (s) => s.id == selectedSkillId,
-                  );
+                  final skill = selectedSkillId == 'none'
+                      ? null
+                      : appState.skills.firstWhere(
+                          (s) => s.id == selectedSkillId,
+                        );
                   final taskTitle = titleController.text.trim().isEmpty
-                      ? skill.name
+                      ? (skill?.name ?? 'New Quest')
                       : titleController.text.trim();
 
                   appState.addTask(

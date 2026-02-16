@@ -463,6 +463,35 @@ class AppState extends ChangeNotifier {
     final task = _tasks[taskIndex];
     final date = onDate ?? DateTime.now();
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
+
+    // Skip XP logic for general tasks
+    if (task.skillId == 'none') {
+      if (task.isPinned) {
+        if (task.completedDates.contains(dateStr)) {
+          task.completedDates.remove(dateStr);
+        } else {
+          task.completedDates.add(dateStr);
+        }
+        notifyListeners();
+        await _firestore
+            .collection('users')
+            .doc(_user!.uid)
+            .collection('tasks')
+            .doc(taskId)
+            .update({'completedDates': task.completedDates});
+      } else {
+        task.isCompleted = !task.isCompleted;
+        await _firestore
+            .collection('users')
+            .doc(_user!.uid)
+            .collection('tasks')
+            .doc(taskId)
+            .update({'isCompleted': task.isCompleted});
+        notifyListeners();
+      }
+      return;
+    }
+
     final skillIndex = _skills.indexWhere((s) => s.id == task.skillId);
 
     if (task.isPinned) {
