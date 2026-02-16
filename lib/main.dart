@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
       themeMode: appState.themeMode,
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: Colors.pink,
+        colorSchemeSeed: Colors.deepPurple,
         brightness: Brightness.light,
         textTheme: GoogleFonts.robotoTextTheme(
           ThemeData.light().textTheme.apply(
