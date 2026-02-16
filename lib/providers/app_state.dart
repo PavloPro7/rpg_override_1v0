@@ -340,13 +340,19 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addTask(String title, String skillId, {DateTime? date}) async {
+  Future<void> addTask(
+    String title,
+    String skillId, {
+    DateTime? date,
+    DateTime? time,
+  }) async {
     if (_user == null) return;
     final newTask = Task(
       id: _uuid.v4(),
       title: title,
       skillId: skillId,
       date: DateUtils.dateOnly(date ?? DateTime.now()),
+      time: time,
       isStarred: false,
       isPinned: false,
     );

@@ -296,6 +296,21 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     return DateFormat('d.MM').format(date);
   }
 
+  String _getTimeLabel(DateTime dateTime) {
+    final now = DateTime.now();
+    final today = DateUtils.dateOnly(now);
+    final tomorrow = today.add(const Duration(days: 1));
+    final date = DateUtils.dateOnly(dateTime);
+
+    if (DateUtils.isSameDay(date, today)) {
+      return 'Today';
+    } else if (DateUtils.isSameDay(date, tomorrow)) {
+      return 'Tomorrow';
+    } else {
+      return DateFormat('d MMM').format(date);
+    }
+  }
+
   Widget _buildTaskList(
     BuildContext context,
     List<Task> activeTasks,
@@ -521,22 +536,43 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                           const SizedBox(width: 4),
                         ],
                         Expanded(
-                          child: Text(
-                            task.title,
-                            style: TextStyle(
-                              decoration: isDone
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                              color: isDone ? Colors.grey : null,
-                              fontWeight:
-                                  (skill != null && task.title == skill.name)
-                                  ? FontWeight.w600
-                                  : null,
-                              letterSpacing:
-                                  (skill != null && task.title == skill.name)
-                                  ? 1.2
-                                  : null,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                task.title,
+                                style: TextStyle(
+                                  decoration: isDone
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  color: isDone ? Colors.grey : null,
+                                  fontWeight:
+                                      (skill != null &&
+                                          task.title == skill.name)
+                                      ? FontWeight.w600
+                                      : null,
+                                  letterSpacing:
+                                      (skill != null &&
+                                          task.title == skill.name)
+                                      ? 1.2
+                                      : null,
+                                ),
+                              ),
+                              if (task.time != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    '${_getTimeLabel(task.time!)}, ${DateFormat('HH:mm').format(task.time!)}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDone
+                                          ? Colors.grey.withValues(alpha: 0.7)
+                                          : colorScheme.onSurfaceVariant,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ],
@@ -626,6 +662,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
 
     // Initial skill selection
     String? selectedSkillId = 'none';
+    TimeOfDay? selectedTime;
 
     showDialog(
       context: context,
@@ -711,6 +748,29 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final TimeOfDay? picked = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.now(),
+                  );
+                  if (picked != null) {
+                    setDialogState(() => selectedTime = picked);
+                  }
+                },
+                icon: const Icon(Icons.access_time_rounded, size: 18),
+                label: Text(
+                  selectedTime == null
+                      ? 'Add Time (Optional)'
+                      : 'Time: ${selectedTime!.format(context)}',
+                ),
+                style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
             ],
           ),
           actions: [
@@ -730,10 +790,21 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                       ? (skill?.name ?? 'New Quest')
                       : titleController.text.trim();
 
+                  final taskTime = selectedTime != null
+                      ? DateTime(
+                          _selectedDate.year,
+                          _selectedDate.month,
+                          _selectedDate.day,
+                          selectedTime!.hour,
+                          selectedTime!.minute,
+                        )
+                      : null;
+
                   appState.addTask(
                     taskTitle,
                     selectedSkillId!,
                     date: _selectedDate,
+                    time: taskTime,
                   );
                   Navigator.pop(context);
                 }

@@ -3,6 +3,7 @@ class Task {
   final String title;
   final String skillId;
   final DateTime date;
+  final DateTime? time; // Optional time
   bool isCompleted;
   bool isStarred;
   bool isPinned;
@@ -13,6 +14,7 @@ class Task {
     required this.title,
     required this.skillId,
     required this.date,
+    this.time,
     this.isCompleted = false,
     this.isStarred = false,
     this.isPinned = false,
@@ -25,6 +27,7 @@ class Task {
       'title': title,
       'skillId': skillId,
       'date': date.toIso8601String(),
+      'time': time?.toIso8601String(),
       'isCompleted': isCompleted,
       'isStarred': isStarred,
       'isPinned': isPinned,
@@ -38,6 +41,7 @@ class Task {
       title: map['title'] ?? '',
       skillId: map['skillId'] ?? '',
       date: DateTime.parse(map['date'] ?? DateTime.now().toIso8601String()),
+      time: map['time'] != null ? DateTime.parse(map['time']) : null,
       isCompleted: map['isCompleted'] ?? false,
       isStarred: map['isStarred'] ?? false,
       isPinned: map['isPinned'] ?? false,
@@ -50,6 +54,7 @@ class Task {
     String? title,
     String? skillId,
     DateTime? date,
+    DateTime? time,
     bool? isCompleted,
     bool? isStarred,
     bool? isPinned,
@@ -60,6 +65,7 @@ class Task {
       title: title ?? this.title,
       skillId: skillId ?? this.skillId,
       date: date ?? this.date,
+      time: time ?? this.time,
       isCompleted: isCompleted ?? this.isCompleted,
       isStarred: isStarred ?? this.isStarred,
       isPinned: isPinned ?? this.isPinned,
