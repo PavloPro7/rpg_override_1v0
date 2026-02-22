@@ -36,10 +36,7 @@ class DefaultFirebaseOptions {
           'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -53,6 +50,13 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyDOJylIorCP2jE6tWM2bDDsiMQ5flIPCoo',
+    appId: '1:150219738865:android:c898c0b70e28f307afe350',
+    messagingSenderId: '150219738865',
+    projectId: 'liferpg-or',
+    storageBucket: 'liferpg-or.firebasestorage.app',
+  );
+  static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyDOJylIorCP2jE6tWM2bDDsiMQ5flIPCoo',
     appId: '1:150219738865:android:c898c0b70e28f307afe350',
     messagingSenderId: '150219738865',
