@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/skill.dart';
@@ -10,6 +12,7 @@ import '../models/task.dart';
 class AppState extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   User? _user;
 
   List<Skill> _skills = [];
@@ -193,6 +196,8 @@ class AppState extends ChangeNotifier {
         notifyListeners();
       }
       await _savePreferences();
+      // Finalize autofill context
+      TextInput.finishAutofillContext();
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
@@ -205,9 +210,49 @@ class AppState extends ChangeNotifier {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
       await _savePreferences();
+      // Finalize autofill context
+      TextInput.finishAutofillContext();
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
+    }
+  }
+
+  Future<String?> signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return null; // Cancelled
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential = await _auth.signInWithCredential(credential);
+
+      // If it's a new user, initialize profile
+      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        final user = userCredential.user;
+        if (user != null) {
+          await _firestore.collection('users').doc(user.uid).set({
+            'name': user.displayName ?? 'Hero',
+            'age': 0,
+            'avatarUrl': user.photoURL,
+            'createdAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        }
+      }
+
+      await _savePreferences();
+      // Finalize autofill context
+      TextInput.finishAutofillContext();
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return e.toString();
     }
   }
 

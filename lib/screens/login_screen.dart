@@ -193,273 +193,334 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 400),
-                child: Card(
-                  elevation: 0,
-                  color: colorScheme.surface.withValues(alpha: 0.7),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(32),
-                    side: BorderSide(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                child: AutofillGroup(
+                  child: Card(
+                    elevation: 0,
+                    color: colorScheme.surface.withValues(alpha: 0.7),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(32),
+                      side: BorderSide(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.3,
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(32.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primary.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            _isLogin
-                                ? Icons.login_rounded
-                                : Icons.person_add_rounded,
-                            size: 48,
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          _isLogin ? 'Welcome Back' : 'Create Hero',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: colorScheme.onSurface,
-                                letterSpacing: -0.5,
-                              ),
-                        ),
-                        const SizedBox(height: 32),
-                        _buildTextField(
-                          controller: _emailController,
-                          label: 'Email',
-                          icon: Icons.email_outlined,
-                          keyboardType: TextInputType.emailAddress,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          controller: _passwordController,
-                          label: 'Password',
-                          icon: Icons.lock_outline_rounded,
-                          isPassword: true,
-                          isPasswordVisible: _showPassword,
-                          onToggleVisibility: () =>
-                              setState(() => _showPassword = !_showPassword),
-                        ),
-                        if (!_isLogin) ...[
-                          const SizedBox(height: 16),
-                          _buildTextField(
-                            controller: _confirmPasswordController,
-                            label: 'Repeat Password',
-                            icon: Icons.lock_reset_rounded,
-                            isPassword: true,
-                            isPasswordVisible: _showConfirmPassword,
-                            onToggleVisibility: () => setState(
-                              () =>
-                                  _showConfirmPassword = !_showConfirmPassword,
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _isLogin
+                                  ? Icons.login_rounded
+                                  : Icons.person_add_rounded,
+                              size: 48,
+                              color: colorScheme.primary,
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 24),
+                          Text(
+                            _isLogin ? 'Welcome Back' : 'Create Hero',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: colorScheme.onSurface,
+                                  letterSpacing: -0.5,
+                                ),
+                          ),
+                          const SizedBox(height: 32),
                           _buildTextField(
-                            controller: _nameController,
-                            label: 'Hero Name',
-                            icon: Icons.badge_outlined,
+                            controller: _emailController,
+                            label: 'Email',
+                            icon: Icons.email_outlined,
+                            keyboardType: TextInputType.emailAddress,
+                            autofillHints: [AutofillHints.email],
                           ),
                           const SizedBox(height: 16),
                           _buildTextField(
-                            controller: _ageController,
-                            label: 'Age',
-                            icon: Icons.cake_outlined,
-                            keyboardType: TextInputType.number,
+                            controller: _passwordController,
+                            label: 'Password',
+                            icon: Icons.lock_outline_rounded,
+                            isPassword: true,
+                            isPasswordVisible: _showPassword,
+                            onToggleVisibility: () =>
+                                setState(() => _showPassword = !_showPassword),
+                            autofillHints: [AutofillHints.password],
                           ),
-                        ],
-                        const SizedBox(height: 16),
-                        Consumer<AppState>(
-                          builder: (context, appState, child) => Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: Checkbox(
-                                      value: appState.staySignedIn,
-                                      onChanged: (val) =>
-                                          appState.setStaySignedIn(val ?? true),
-                                      activeColor: colorScheme.primary,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(4),
+                          if (!_isLogin) ...[
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _confirmPasswordController,
+                              label: 'Repeat Password',
+                              icon: Icons.lock_reset_rounded,
+                              isPassword: true,
+                              isPasswordVisible: _showConfirmPassword,
+                              onToggleVisibility: () => setState(
+                                () => _showConfirmPassword =
+                                    !_showConfirmPassword,
+                              ),
+                              autofillHints: [AutofillHints.newPassword],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _nameController,
+                              label: 'Hero Name',
+                              icon: Icons.badge_outlined,
+                              autofillHints: [AutofillHints.name],
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _ageController,
+                              label: 'Age',
+                              icon: Icons.cake_outlined,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          Consumer<AppState>(
+                            builder: (context, appState, child) => Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: Checkbox(
+                                        value: appState.staySignedIn,
+                                        onChanged: (val) => appState
+                                            .setStaySignedIn(val ?? true),
+                                        activeColor: colorScheme.primary,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Stay Signed in',
+                                      style: TextStyle(
+                                        color: colorScheme.onSurfaceVariant,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (_isLogin)
+                                  TextButton(
+                                    onPressed: _showForgotPasswordDialog,
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    child: Text(
+                                      'Forgot Password?',
+                                      style: TextStyle(
+                                        color: colorScheme.primary,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Stay Signed in',
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: FilledButton(
+                              onPressed: _isLoading ? null : _submit,
+                              style: FilledButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Text(
+                                      _isLogin ? 'Login' : 'Register',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          GestureDetector(
+                            onTap: () => setState(() {
+                              _isLogin = !_isLogin;
+                              _confirmPasswordController.clear();
+                            }),
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: _isLogin
+                                        ? "Don't have an account? "
+                                        : "Already have an account? ",
                                     style: TextStyle(
                                       color: colorScheme.onSurfaceVariant,
-                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: _isLogin ? "Register" : "Login",
+                                    style: TextStyle(
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ],
                               ),
-                              if (_isLogin)
-                                TextButton(
-                                  onPressed: _showForgotPasswordDialog,
-                                  style: TextButton.styleFrom(
-                                    padding: EdgeInsets.zero,
-                                    minimumSize: Size.zero,
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                  child: Text(
-                                    'Forgot Password?',
-                                    style: TextStyle(
-                                      color: colorScheme.primary,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Divider(
+                                  color: colorScheme.outlineVariant.withValues(
+                                    alpha: 0.3,
                                   ),
                                 ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Text(
+                                  "OR",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurfaceVariant
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(
+                                  color: colorScheme.outlineVariant.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 56,
-                          child: FilledButton(
-                            onPressed: _isLoading ? null : _submit,
-                            style: FilledButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Text(
-                                    _isLogin ? 'Login' : 'Register',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        GestureDetector(
-                          onTap: () => setState(() {
-                            _isLogin = !_isLogin;
-                            _confirmPasswordController.clear();
-                          }),
-                          child: Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: _isLogin
-                                      ? "Don't have an account? "
-                                      : "Already have an account? ",
-                                  style: TextStyle(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: _isLogin ? "Register" : "Login",
-                                  style: TextStyle(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Divider(
-                                color: colorScheme.outlineVariant.withValues(
-                                  alpha: 0.3,
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Text(
-                                "OR",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: colorScheme.onSurfaceVariant
-                                      .withValues(alpha: 0.5),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: colorScheme.outlineVariant.withValues(
-                                  alpha: 0.3,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          child: TextButton.icon(
-                            onPressed: _isLoading
-                                ? null
-                                : () async {
-                                    setState(() => _isLoading = true);
-                                    final messenger = ScaffoldMessenger.of(
-                                      context,
-                                    );
-                                    final error = await context
-                                        .read<AppState>()
-                                        .signInAnonymously();
-                                    if (mounted && error != null) {
-                                      messenger.showSnackBar(
-                                        SnackBar(
-                                          content: Text(error),
-                                          backgroundColor: Colors.redAccent,
-                                        ),
+                          const SizedBox(height: 16),
+                          // New Google Sign In Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () async {
+                                      setState(() => _isLoading = true);
+                                      final messenger = ScaffoldMessenger.of(
+                                        context,
                                       );
-                                    }
-                                    if (mounted) {
-                                      setState(() => _isLoading = false);
-                                    }
-                                  },
-                            icon: const Icon(
-                              Icons.person_outline_rounded,
-                              size: 20,
-                            ),
-                            label: const Text(
-                              "Continue as Guest",
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            style: TextButton.styleFrom(
-                              foregroundColor: colorScheme.onSurfaceVariant,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                      final error = await context
+                                          .read<AppState>()
+                                          .signInWithGoogle();
+                                      if (mounted && error != null) {
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(error),
+                                            backgroundColor: Colors.redAccent,
+                                          ),
+                                        );
+                                      }
+                                      if (mounted)
+                                        setState(() => _isLoading = false);
+                                    },
+                              icon: const Icon(
+                                Icons.g_mobiledata_rounded,
+                                size: 28,
+                              ),
+                              label: const Text(
+                                "Continue with Google",
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                side: BorderSide(
+                                  color: colorScheme.outlineVariant.withValues(
+                                    alpha: 0.5,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton.icon(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () async {
+                                      setState(() => _isLoading = true);
+                                      final messenger = ScaffoldMessenger.of(
+                                        context,
+                                      );
+                                      final error = await context
+                                          .read<AppState>()
+                                          .signInAnonymously();
+                                      if (mounted && error != null) {
+                                        messenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(error),
+                                            backgroundColor: Colors.redAccent,
+                                          ),
+                                        );
+                                      }
+                                      if (mounted) {
+                                        setState(() => _isLoading = false);
+                                      }
+                                    },
+                              icon: const Icon(
+                                Icons.person_outline_rounded,
+                                size: 20,
+                              ),
+                              label: const Text(
+                                "Continue as Guest",
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              style: TextButton.styleFrom(
+                                foregroundColor: colorScheme.onSurfaceVariant,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -487,12 +548,14 @@ class _LoginScreenState extends State<LoginScreen> {
     bool? isPasswordVisible,
     VoidCallback? onToggleVisibility,
     TextInputType? keyboardType,
+    Iterable<String>? autofillHints,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return TextField(
       controller: controller,
       obscureText: isPassword && !(isPasswordVisible ?? false),
       keyboardType: keyboardType,
+      autofillHints: autofillHints,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, size: 22),
