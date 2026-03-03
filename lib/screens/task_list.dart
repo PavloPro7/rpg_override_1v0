@@ -710,7 +710,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                         child: Row(
                           children: [
                             Text('📝', style: TextStyle(fontSize: 16)),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             Text(
                               'None / General',
                               style: TextStyle(

@@ -429,53 +429,66 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          // New Google Sign In Button
-                          SizedBox(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: _isLoading
-                                  ? null
-                                  : () async {
-                                      setState(() => _isLoading = true);
-                                      final messenger = ScaffoldMessenger.of(
-                                        context,
+                          const SizedBox(height: 16),
+                          // Premium Social Login Buttons
+                          _buildSocialButton(
+                            label: "Continue with Google",
+                            icon: Icons.g_mobiledata_rounded,
+                            onPressed: _isLoading
+                                ? null
+                                : () async {
+                                    setState(() => _isLoading = true);
+                                    final messenger = ScaffoldMessenger.of(
+                                      context,
+                                    );
+                                    final error = await context
+                                        .read<AppState>()
+                                        .signInWithGoogle();
+                                    if (mounted && error != null) {
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(error),
+                                          backgroundColor: Colors.redAccent,
+                                        ),
                                       );
-                                      final error = await context
-                                          .read<AppState>()
-                                          .signInWithGoogle();
-                                      if (mounted && error != null) {
-                                        messenger.showSnackBar(
-                                          SnackBar(
-                                            content: Text(error),
-                                            backgroundColor: Colors.redAccent,
-                                          ),
-                                        );
-                                      }
-                                      if (mounted)
-                                        setState(() => _isLoading = false);
-                                    },
-                              icon: const Icon(
-                                Icons.g_mobiledata_rounded,
-                                size: 28,
-                              ),
-                              label: const Text(
-                                "Continue with Google",
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                side: BorderSide(
-                                  color: colorScheme.outlineVariant.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ),
+                                    }
+                                    if (mounted) {
+                                      setState(() => _isLoading = false);
+                                    }
+                                  },
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black87,
+                            isLoading: _isLoading,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildSocialButton(
+                            label: "Continue with Apple",
+                            icon: Icons.apple,
+                            onPressed: _isLoading
+                                ? null
+                                : () async {
+                                    setState(() => _isLoading = true);
+                                    final messenger = ScaffoldMessenger.of(
+                                      context,
+                                    );
+                                    final error = await context
+                                        .read<AppState>()
+                                        .signInWithApple();
+                                    if (mounted && error != null) {
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(error),
+                                          backgroundColor: Colors.redAccent,
+                                        ),
+                                      );
+                                    }
+                                    if (mounted) {
+                                      setState(() => _isLoading = false);
+                                    }
+                                  },
+                            backgroundColor: Colors.black,
+                            foregroundColor: Colors.white,
+                            isLoading: _isLoading,
                           ),
                           const SizedBox(height: 8),
                           SizedBox(
@@ -587,6 +600,53 @@ class _LoginScreenState extends State<LoginScreen> {
         floatingLabelStyle: TextStyle(
           color: colorScheme.primary,
           fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required Color backgroundColor,
+    required Color foregroundColor,
+    required bool isLoading,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 28),
+        label: Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            letterSpacing: 0.2,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor,
+          foregroundColor: foregroundColor,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: backgroundColor == Colors.white
+                ? BorderSide(color: Colors.grey.shade300)
+                : BorderSide.none,
+          ),
         ),
       ),
     );
