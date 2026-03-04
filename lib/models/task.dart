@@ -20,7 +20,7 @@ class Task {
     this.isStarred = false,
     this.isPinned = false,
     this.completedDates = const [],
-    this.difficulty = 5,
+    this.difficulty = 1,
   });
 
   Map<String, dynamic> toMap() {
@@ -49,7 +49,7 @@ class Task {
       isStarred: map['isStarred'] ?? false,
       isPinned: map['isPinned'] ?? false,
       completedDates: List<String>.from(map['completedDates'] ?? []),
-      difficulty: map['difficulty'] ?? 5,
+      difficulty: map['difficulty'] ?? 1,
     );
   }
 

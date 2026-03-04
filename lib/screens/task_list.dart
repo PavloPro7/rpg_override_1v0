@@ -797,12 +797,13 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     final appState = Provider.of<AppState>(context, listen: false);
 
     // Initial skill selection
-    String? selectedSkillId = taskToEdit?.skillId ?? 'none';
+    String? selectedSkillId =
+        taskToEdit?.skillId ?? appState.defaultSkillId ?? 'none';
     TimeOfDay? selectedTime = taskToEdit?.time != null
         ? TimeOfDay.fromDateTime(taskToEdit!.time!)
         : null;
     bool timeWasCleared = false;
-    int selectedDifficulty = taskToEdit?.difficulty ?? 5;
+    int selectedDifficulty = taskToEdit?.difficulty ?? 1;
 
     void submitQuest() {
       if (selectedSkillId != null) {

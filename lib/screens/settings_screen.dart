@@ -61,6 +61,38 @@ class SettingsScreen extends StatelessWidget {
                     ? null
                     : () => _showChangePasswordDialog(context, appState),
               ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+                child: DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: 'Default Skill for New Quests',
+                    icon: Icon(Icons.star_outline_rounded),
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                  ),
+                  value: appState.defaultSkillId,
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('None')),
+                    const DropdownMenuItem(
+                      value: 'none',
+                      child: Text('⭐ General Quest'),
+                    ),
+                    ...appState.skills.map(
+                      (s) => DropdownMenuItem(
+                        value: s.id,
+                        child: Text('${s.icon} ${s.name}'),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    appState.setDefaultSkillId(value);
+                  },
+                ),
+              ),
             ]),
             const SizedBox(height: 24),
 

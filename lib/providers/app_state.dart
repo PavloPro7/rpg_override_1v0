@@ -26,6 +26,7 @@ class AppState extends ChangeNotifier {
   final _uuid = const Uuid();
   ThemeMode _themeMode = ThemeMode.system;
   bool _staySignedIn = true;
+  String? _defaultSkillId;
 
   AppState() {
     _loadPreferences();
@@ -104,17 +105,32 @@ class AppState extends ChangeNotifier {
   void setStaySignedIn(bool value) {
     _staySignedIn = value;
     notifyListeners();
+    _savePreferences();
+  }
+
+  String? get defaultSkillId => _defaultSkillId;
+
+  void setDefaultSkillId(String? skillId) {
+    _defaultSkillId = skillId;
+    notifyListeners();
+    _savePreferences();
   }
 
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     _staySignedIn = prefs.getBool('staySignedIn') ?? true;
+    _defaultSkillId = prefs.getString('defaultSkillId');
     notifyListeners();
   }
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('staySignedIn', _staySignedIn);
+    if (_defaultSkillId != null) {
+      await prefs.setString('defaultSkillId', _defaultSkillId!);
+    } else {
+      await prefs.remove('defaultSkillId');
+    }
   }
 
   bool get isAuthenticated => _user != null;
@@ -435,7 +451,7 @@ class AppState extends ChangeNotifier {
     String skillId, {
     DateTime? date,
     DateTime? time,
-    int difficulty = 5,
+    int difficulty = 1,
   }) async {
     if (_user == null) return;
     final newTask = Task(
