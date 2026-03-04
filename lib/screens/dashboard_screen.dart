@@ -263,15 +263,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   child: Column(
                     children: appState.tasks.reversed.take(5).map((task) {
-                      final skill = appState.skills.firstWhere(
-                        (s) => s.id == task.skillId,
-                      );
+                      final isGeneral = task.skillId == 'none';
+                      final skill = isGeneral
+                          ? null
+                          : appState.skills.firstWhere(
+                              (s) => s.id == task.skillId,
+                              // Fallback in case skill was deleted but task remains
+                              orElse: () => appState.skills.first,
+                            );
+
+                      final skillColor = skill?.color ?? Colors.grey;
+                      final skillName = skill?.name ?? 'General Quest';
+
                       return ListTile(
                         leading: Icon(
                           task.isCompleted
                               ? Icons.check_circle
                               : Icons.radio_button_unchecked,
-                          color: skill.color,
+                          color: skillColor,
                         ),
                         title: Text(
                           task.title,
@@ -282,7 +291,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 : null,
                           ),
                         ),
-                        subtitle: Text(skill.name),
+                        subtitle: Text(skillName),
                         trailing: Text(
                           '${task.date.day}/${task.date.month}',
                           style: TextStyle(

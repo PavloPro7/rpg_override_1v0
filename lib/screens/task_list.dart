@@ -110,6 +110,18 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                   },
                   tooltip: 'Toggle Pin',
                 ),
+                if (_selectedTaskIds.length == 1)
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                    onPressed: () {
+                      final selectedTask = appState.tasks.firstWhere(
+                        (t) => t.id == _selectedTaskIds.first,
+                      );
+                      _showAddTaskDialog(context, selectedTask);
+                      setState(() => _selectedTaskIds.clear());
+                    },
+                    tooltip: 'Edit task',
+                  ),
                 IconButton(
                   icon: const Icon(Icons.star_outline, color: Colors.white),
                   onPressed: () {
@@ -778,20 +790,26 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     );
   }
 
-  void _showAddTaskDialog(BuildContext context) {
-    final titleController = TextEditingController();
+  void _showAddTaskDialog(BuildContext context, [Task? taskToEdit]) {
+    final titleController = TextEditingController(
+      text: taskToEdit?.title ?? '',
+    );
     final appState = Provider.of<AppState>(context, listen: false);
 
     // Initial skill selection
-    String? selectedSkillId = 'none';
-    TimeOfDay? selectedTime;
+    String? selectedSkillId = taskToEdit?.skillId ?? 'none';
+    TimeOfDay? selectedTime = taskToEdit?.time != null
+        ? TimeOfDay.fromDateTime(taskToEdit!.time!)
+        : null;
+    bool timeWasCleared = false;
+    int selectedDifficulty = taskToEdit?.difficulty ?? 5;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           icon: const Icon(Icons.auto_awesome),
-          title: const Text('Accept New Quest'),
+          title: Text(taskToEdit == null ? 'Accept New Quest' : 'Edit Quest'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -870,35 +888,108 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  final TimeOfDay? picked = await showTimePicker(
-                    context: context,
-                    initialTime: TimeOfDay.now(),
+              const SizedBox(height: 16),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Difficulty (1=20%, 5=100%)',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: List.generate(5, (index) {
+                  final diff = index + 1;
+                  final isSelected = selectedDifficulty == diff;
+                  final colorScheme = Theme.of(context).colorScheme;
+                  return InkWell(
+                    onTap: () =>
+                        setDialogState(() => selectedDifficulty = diff),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? colorScheme.primary
+                            : colorScheme.surfaceContainerHighest,
+                        border: Border.all(
+                          color: isSelected
+                              ? colorScheme.primary
+                              : Colors.transparent,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$diff',
+                          style: TextStyle(
+                            color: isSelected
+                                ? colorScheme.onPrimary
+                                : colorScheme.onSurface,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
                   );
-                  if (picked != null) {
-                    setDialogState(() => selectedTime = picked);
-                  }
-                },
-                icon: const Icon(Icons.access_time_rounded, size: 18),
-                label: Text(
-                  selectedTime == null
-                      ? 'Add Time (Optional)'
-                      : 'Time: ${selectedTime!.format(context)}',
-                ),
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                }),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final TimeOfDay? picked = await showTimePicker(
+                          context: context,
+                          initialTime: selectedTime ?? TimeOfDay.now(),
+                        );
+                        if (picked != null) {
+                          setDialogState(() {
+                            selectedTime = picked;
+                            timeWasCleared = false;
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.access_time_rounded, size: 18),
+                      label: Text(
+                        selectedTime == null
+                            ? 'Add Time (Optional)'
+                            : 'Time: ${selectedTime!.format(context)}',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  if (selectedTime != null) ...[
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.grey),
+                      onPressed: () {
+                        setDialogState(() {
+                          selectedTime = null;
+                          timeWasCleared = true;
+                        });
+                      },
+                      tooltip: 'Clear time',
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Decline'),
+              child: const Text('Cancel'),
             ),
             FilledButton(
               onPressed: () {
@@ -912,26 +1003,40 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                       ? (skill?.name ?? 'New Quest')
                       : titleController.text.trim();
 
+                  final taskDate = taskToEdit?.date ?? _selectedDate;
                   final taskTime = selectedTime != null
                       ? DateTime(
-                          _selectedDate.year,
-                          _selectedDate.month,
-                          _selectedDate.day,
+                          taskDate.year,
+                          taskDate.month,
+                          taskDate.day,
                           selectedTime!.hour,
                           selectedTime!.minute,
                         )
                       : null;
 
-                  appState.addTask(
-                    taskTitle,
-                    selectedSkillId!,
-                    date: _selectedDate,
-                    time: taskTime,
-                  );
+                  if (taskToEdit == null) {
+                    appState.addTask(
+                      taskTitle,
+                      selectedSkillId!,
+                      date: _selectedDate,
+                      time: taskTime,
+                      difficulty: selectedDifficulty,
+                    );
+                  } else {
+                    appState.updateTaskContent(
+                      taskToEdit.id,
+                      taskTitle,
+                      selectedSkillId!,
+                      date: taskDate,
+                      time: taskTime,
+                      clearTime: timeWasCleared,
+                      difficulty: selectedDifficulty,
+                    );
+                  }
                   Navigator.pop(context);
                 }
               },
-              child: const Text('Accept Quest'),
+              child: Text(taskToEdit == null ? 'Accept Quest' : 'Save Quest'),
             ),
           ],
         ),

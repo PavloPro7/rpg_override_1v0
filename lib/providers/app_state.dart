@@ -435,6 +435,7 @@ class AppState extends ChangeNotifier {
     String skillId, {
     DateTime? date,
     DateTime? time,
+    int difficulty = 5,
   }) async {
     if (_user == null) return;
     final newTask = Task(
@@ -443,6 +444,7 @@ class AppState extends ChangeNotifier {
       skillId: skillId,
       date: DateUtils.dateOnly(date ?? DateTime.now()),
       time: time,
+      difficulty: difficulty,
       isStarred: false,
       isPinned: false,
     );
@@ -455,6 +457,44 @@ class AppState extends ChangeNotifier {
         .collection('tasks')
         .doc(newTask.id)
         .set(newTask.toMap());
+  }
+
+  Future<void> updateTaskContent(
+    String taskId,
+    String title,
+    String skillId, {
+    DateTime? date,
+    DateTime? time,
+    bool clearTime = false,
+    int? difficulty,
+  }) async {
+    if (_user == null) return;
+    final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
+    if (taskIndex == -1) return;
+
+    final existingTask = _tasks[taskIndex];
+    final updatedTask = Task(
+      id: existingTask.id,
+      title: title,
+      skillId: skillId,
+      date: date ?? existingTask.date,
+      time: clearTime ? null : (time ?? existingTask.time),
+      difficulty: difficulty ?? existingTask.difficulty,
+      isCompleted: existingTask.isCompleted,
+      isStarred: existingTask.isStarred,
+      isPinned: existingTask.isPinned,
+      completedDates: existingTask.completedDates,
+    );
+
+    _tasks[taskIndex] = updatedTask;
+    notifyListeners();
+
+    await _firestore
+        .collection('users')
+        .doc(_user!.uid)
+        .collection('tasks')
+        .doc(taskId)
+        .set(updatedTask.toMap());
   }
 
   Future<void> deleteTasks(List<String> taskIds) async {
@@ -596,13 +636,13 @@ class AppState extends ChangeNotifier {
         task.completedDates.remove(dateStr);
         // Undo XP reward (Tripled: 10.0 * 3)
         if (skillIndex != -1) {
-          _skills[skillIndex].addXp(-30.0);
+          _skills[skillIndex].addXp(-(30.0 * (task.difficulty / 5.0)));
         }
       } else {
         task.completedDates.add(dateStr);
         // Add XP reward (Tripled: 10.0 * 3)
         if (skillIndex != -1) {
-          _skills[skillIndex].addXp(30.0);
+          _skills[skillIndex].addXp(30.0 * (task.difficulty / 5.0));
         }
       }
 
@@ -628,10 +668,11 @@ class AppState extends ChangeNotifier {
       task.isCompleted = !task.isCompleted;
 
       if (skillIndex != -1) {
+        final double xpAmount = 30.0 * (task.difficulty / 5.0);
         if (task.isCompleted) {
-          _skills[skillIndex].addXp(30.0); // Tripled XP
+          _skills[skillIndex].addXp(xpAmount); // Tripled XP * multiplier
         } else {
-          _skills[skillIndex].addXp(-30.0); // Tripled XP
+          _skills[skillIndex].addXp(-xpAmount); // Tripled XP * multiplier
         }
 
         await _firestore

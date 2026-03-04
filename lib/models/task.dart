@@ -8,6 +8,7 @@ class Task {
   bool isStarred;
   bool isPinned;
   List<String> completedDates;
+  final int difficulty;
 
   Task({
     required this.id,
@@ -19,6 +20,7 @@ class Task {
     this.isStarred = false,
     this.isPinned = false,
     this.completedDates = const [],
+    this.difficulty = 5,
   });
 
   Map<String, dynamic> toMap() {
@@ -32,6 +34,7 @@ class Task {
       'isStarred': isStarred,
       'isPinned': isPinned,
       'completedDates': completedDates,
+      'difficulty': difficulty,
     };
   }
 
@@ -46,6 +49,7 @@ class Task {
       isStarred: map['isStarred'] ?? false,
       isPinned: map['isPinned'] ?? false,
       completedDates: List<String>.from(map['completedDates'] ?? []),
+      difficulty: map['difficulty'] ?? 5,
     );
   }
 
@@ -59,6 +63,7 @@ class Task {
     bool? isStarred,
     bool? isPinned,
     List<String>? completedDates,
+    int? difficulty,
   }) {
     return Task(
       id: id ?? this.id,
@@ -70,6 +75,7 @@ class Task {
       isStarred: isStarred ?? this.isStarred,
       isPinned: isPinned ?? this.isPinned,
       completedDates: completedDates ?? this.completedDates,
+      difficulty: difficulty ?? this.difficulty,
     );
   }
 }
