@@ -804,6 +804,49 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     bool timeWasCleared = false;
     int selectedDifficulty = taskToEdit?.difficulty ?? 5;
 
+    void submitQuest() {
+      if (selectedSkillId != null) {
+        final skill = selectedSkillId == 'none'
+            ? null
+            : appState.skills.firstWhere((s) => s.id == selectedSkillId);
+        final taskTitle = titleController.text.trim().isEmpty
+            ? (skill?.name ?? 'New Quest')
+            : titleController.text.trim();
+
+        final taskDate = taskToEdit?.date ?? _selectedDate;
+        final taskTime = selectedTime != null
+            ? DateTime(
+                taskDate.year,
+                taskDate.month,
+                taskDate.day,
+                selectedTime!.hour,
+                selectedTime!.minute,
+              )
+            : null;
+
+        if (taskToEdit == null) {
+          appState.addTask(
+            taskTitle,
+            selectedSkillId!,
+            date: _selectedDate,
+            time: taskTime,
+            difficulty: selectedDifficulty,
+          );
+        } else {
+          appState.updateTaskContent(
+            taskToEdit.id,
+            taskTitle,
+            selectedSkillId!,
+            date: taskDate,
+            time: taskTime,
+            clearTime: timeWasCleared,
+            difficulty: selectedDifficulty,
+          );
+        }
+        Navigator.pop(context);
+      }
+    }
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -815,6 +858,8 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
             children: [
               TextField(
                 controller: titleController,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => submitQuest(),
                 decoration: InputDecoration(
                   labelText: 'Quest Name',
                   border: OutlineInputBorder(
@@ -992,50 +1037,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () {
-                if (selectedSkillId != null) {
-                  final skill = selectedSkillId == 'none'
-                      ? null
-                      : appState.skills.firstWhere(
-                          (s) => s.id == selectedSkillId,
-                        );
-                  final taskTitle = titleController.text.trim().isEmpty
-                      ? (skill?.name ?? 'New Quest')
-                      : titleController.text.trim();
-
-                  final taskDate = taskToEdit?.date ?? _selectedDate;
-                  final taskTime = selectedTime != null
-                      ? DateTime(
-                          taskDate.year,
-                          taskDate.month,
-                          taskDate.day,
-                          selectedTime!.hour,
-                          selectedTime!.minute,
-                        )
-                      : null;
-
-                  if (taskToEdit == null) {
-                    appState.addTask(
-                      taskTitle,
-                      selectedSkillId!,
-                      date: _selectedDate,
-                      time: taskTime,
-                      difficulty: selectedDifficulty,
-                    );
-                  } else {
-                    appState.updateTaskContent(
-                      taskToEdit.id,
-                      taskTitle,
-                      selectedSkillId!,
-                      date: taskDate,
-                      time: taskTime,
-                      clearTime: timeWasCleared,
-                      difficulty: selectedDifficulty,
-                    );
-                  }
-                  Navigator.pop(context);
-                }
-              },
+              onPressed: submitQuest,
               child: Text(taskToEdit == null ? 'Accept Quest' : 'Save Quest'),
             ),
           ],

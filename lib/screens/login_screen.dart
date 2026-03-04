@@ -86,6 +86,29 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: emailController,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) async {
+                final email = emailController.text.trim();
+                if (email.isEmpty) return;
+
+                final messenger = ScaffoldMessenger.of(context);
+                final error = await context
+                    .read<AppState>()
+                    .sendPasswordResetEmail(email);
+
+                if (context.mounted) Navigator.pop(context);
+
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      error ?? 'Password reset link sent to $email',
+                    ),
+                    backgroundColor: error != null
+                        ? Colors.redAccent
+                        : Colors.green,
+                  ),
+                );
+              },
               decoration: InputDecoration(
                 labelText: 'Email',
                 prefixIcon: const Icon(Icons.email_outlined),
@@ -252,6 +275,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             onToggleVisibility: () =>
                                 setState(() => _showPassword = !_showPassword),
                             autofillHints: [AutofillHints.password],
+                            textInputAction: _isLogin
+                                ? TextInputAction.done
+                                : TextInputAction.next,
+                            onSubmitted: _isLogin ? (_) => _submit() : null,
                           ),
                           if (!_isLogin) ...[
                             const SizedBox(height: 16),
@@ -280,6 +307,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               label: 'Age',
                               icon: Icons.cake_outlined,
                               keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) => _submit(),
                             ),
                           ],
                           const SizedBox(height: 16),
@@ -562,6 +591,8 @@ class _LoginScreenState extends State<LoginScreen> {
     VoidCallback? onToggleVisibility,
     TextInputType? keyboardType,
     Iterable<String>? autofillHints,
+    TextInputAction? textInputAction,
+    ValueChanged<String>? onSubmitted,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return TextField(
@@ -569,6 +600,8 @@ class _LoginScreenState extends State<LoginScreen> {
       obscureText: isPassword && !(isPasswordVisible ?? false),
       keyboardType: keyboardType,
       autofillHints: autofillHints,
+      textInputAction: textInputAction ?? TextInputAction.next,
+      onSubmitted: onSubmitted,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, size: 22),

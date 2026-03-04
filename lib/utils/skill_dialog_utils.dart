@@ -25,6 +25,35 @@ class SkillDialogUtils {
       Colors.amber,
     ];
 
+    void submitSkill() {
+      if (nameController.text.isNotEmpty) {
+        final appState = Provider.of<AppState>(context, listen: false);
+        if (isEditing) {
+          appState.updateSkill(
+            skill.copyWith(
+              name: nameController.text,
+              category: categoryController.text,
+              icon: iconController.text,
+              difficulty: difficulty,
+              color: selectedColor,
+            ),
+          );
+        } else {
+          appState.addSkill(
+            nameController.text,
+            categoryController.text.isEmpty
+                ? 'General'
+                : categoryController.text,
+            selectedColor,
+            difficulty,
+            startLevel.toInt(),
+            iconController.text.isEmpty ? '⭐' : iconController.text,
+          );
+        }
+        Navigator.pop(context);
+      }
+    }
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -37,6 +66,8 @@ class SkillDialogUtils {
               children: [
                 TextField(
                   controller: nameController,
+                  textInputAction: TextInputAction.next,
+                  onSubmitted: (_) => submitSkill(),
                   decoration: const InputDecoration(
                     labelText: 'Skill Name',
                     border: OutlineInputBorder(),
@@ -50,6 +81,8 @@ class SkillDialogUtils {
                       flex: 2,
                       child: TextField(
                         controller: iconController,
+                        textInputAction: TextInputAction.next,
+                        onSubmitted: (_) => submitSkill(),
                         decoration: const InputDecoration(
                           labelText: 'Emoji',
                           border: OutlineInputBorder(),
@@ -63,6 +96,8 @@ class SkillDialogUtils {
                       flex: 5,
                       child: TextField(
                         controller: categoryController,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => submitSkill(),
                         decoration: const InputDecoration(
                           labelText: 'Category',
                           border: OutlineInputBorder(),
@@ -134,37 +169,7 @@ class SkillDialogUtils {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty) {
-                  final appState = Provider.of<AppState>(
-                    context,
-                    listen: false,
-                  );
-                  if (isEditing) {
-                    appState.updateSkill(
-                      skill.copyWith(
-                        name: nameController.text,
-                        category: categoryController.text,
-                        icon: iconController.text,
-                        difficulty: difficulty,
-                        color: selectedColor,
-                      ),
-                    );
-                  } else {
-                    appState.addSkill(
-                      nameController.text,
-                      categoryController.text.isEmpty
-                          ? 'General'
-                          : categoryController.text,
-                      selectedColor,
-                      difficulty,
-                      startLevel.toInt(),
-                      iconController.text.isEmpty ? '⭐' : iconController.text,
-                    );
-                  }
-                  Navigator.pop(context);
-                }
-              },
+              onPressed: submitSkill,
               child: Text(isEditing ? 'Update Skill' : 'Create Skill'),
             ),
           ],
