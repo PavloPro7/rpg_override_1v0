@@ -216,15 +216,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         color: colorScheme.primary,
                         shape: BoxShape.circle,
                       ),
-                      markersAlignment: Alignment.bottomCenter,
-                      markerDecoration: BoxDecoration(
-                        color: colorScheme.secondary,
-                        shape: BoxShape.circle,
-                      ),
                       todayTextStyle: TextStyle(
                         color: colorScheme.primary,
                         fontWeight: FontWeight.bold,
                       ),
+                    ),
+                    calendarBuilders: CalendarBuilders(
+                      markerBuilder: (context, date, events) {
+                        if (events.isEmpty) return const SizedBox();
+                        return Positioned(
+                          bottom: 6,
+                          child: Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: colorScheme.secondary,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     eventLoader: (day) {
                       return appState.tasks.where((task) {

@@ -7,7 +7,7 @@ plugins {
 }
 dependencies {
   // Import the Firebase BoM
-  implementation(platform("com.google.firebase:firebase-bom:34.8.0"))
+  implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
 
 
   // TODO: Add the dependencies for Firebase products you want to use
@@ -19,7 +19,7 @@ dependencies {
   // https://firebase.google.com/docs/android/setup#available-libraries
 }
 android {
-    namespace = "com.example.rpg_override_1v0"
+    namespace = "com.example.rpgoverride"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -34,7 +34,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.rpg_override_1v0"
+        applicationId = "com.example.rpgoverride"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

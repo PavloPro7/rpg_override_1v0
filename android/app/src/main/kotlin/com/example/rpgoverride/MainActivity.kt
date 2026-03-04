@@ -1,4 +1,4 @@
-package com.example.rpg_override_1v0
+package com.example.rpgoverride
 
 import io.flutter.embedding.android.FlutterActivity
 

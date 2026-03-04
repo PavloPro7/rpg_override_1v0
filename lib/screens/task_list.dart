@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
+import 'package:table_calendar/table_calendar.dart';
 import '../providers/app_state.dart';
 import '../models/task.dart';
 
@@ -267,11 +268,8 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
               child: Center(
                 child: IconButton(
                   onPressed: () async {
-                    final DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate: _selectedDate,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
+                    final DateTime? picked = await _showCustomDatePicker(
+                      context,
                     );
                     if (picked != null && picked != _selectedDate) {
                       setState(() {
@@ -653,6 +651,130 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Future<DateTime?> _showCustomDatePicker(BuildContext context) async {
+    final colorScheme = Theme.of(context).colorScheme;
+    DateTime focusedDay = _selectedDate;
+    DateTime? selectedDay = _selectedDate;
+    final appState = context.read<AppState>();
+
+    return showDialog<DateTime>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Select Date',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TableCalendar(
+                      firstDay: DateTime.utc(2000, 1, 1),
+                      lastDay: DateTime.utc(2100, 12, 31),
+                      focusedDay: focusedDay,
+                      selectedDayPredicate: (day) =>
+                          isSameDay(selectedDay, day),
+                      onDaySelected: (selected, focused) {
+                        setState(() {
+                          selectedDay = selected;
+                          focusedDay = focused;
+                        });
+                      },
+                      availableGestures: AvailableGestures.none,
+                      calendarFormat: CalendarFormat.month,
+                      startingDayOfWeek: StartingDayOfWeek.monday,
+                      headerStyle: HeaderStyle(
+                        formatButtonVisible: false,
+                        titleCentered: true,
+                        titleTextStyle: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                        leftChevronIcon: Icon(
+                          Icons.chevron_left,
+                          color: colorScheme.primary,
+                        ),
+                        rightChevronIcon: Icon(
+                          Icons.chevron_right,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      calendarStyle: CalendarStyle(
+                        todayDecoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        selectedDecoration: BoxDecoration(
+                          color: colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        todayTextStyle: TextStyle(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      calendarBuilders: CalendarBuilders(
+                        markerBuilder: (context, date, events) {
+                          if (events.isEmpty) return const SizedBox();
+                          return Positioned(
+                            bottom: 6,
+                            child: Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: colorScheme.secondary,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      eventLoader: (day) {
+                        return appState.tasks.where((task) {
+                          return isSameDay(task.date, day);
+                        }).toList();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: () =>
+                              Navigator.pop(dialogContext, selectedDay),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
