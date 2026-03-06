@@ -829,7 +829,11 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     bool timeWasCleared = false;
     int selectedDifficulty = taskToEdit?.difficulty ?? 1;
 
+    bool isSubmitting = false;
+
     void submitQuest() {
+      if (isSubmitting) return;
+      isSubmitting = true;
       if (selectedSkillId != null) {
         final skill = selectedSkillId == 'none'
             ? null
@@ -869,203 +873,222 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
           );
         }
         Navigator.pop(context);
+      } else {
+        isSubmitting = false;
       }
     }
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          icon: const Icon(Icons.auto_awesome),
-          title: Text(taskToEdit == null ? 'Accept New Quest' : 'Edit Quest'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => submitQuest(),
-                decoration: InputDecoration(
-                  labelText: 'Quest Name',
-                  border: OutlineInputBorder(
+        builder: (context, setDialogState) => Focus(
+          onKeyEvent: (node, event) {
+            if (event is KeyDownEvent) {
+              if (event.logicalKey == LogicalKeyboardKey.escape) {
+                Navigator.pop(context);
+                return KeyEventResult.handled;
+              }
+              if (event.logicalKey == LogicalKeyboardKey.enter ||
+                  event.logicalKey == LogicalKeyboardKey.numpadEnter) {
+                submitQuest();
+                return KeyEventResult.handled;
+              }
+            }
+            return KeyEventResult.ignored;
+          },
+          child: AlertDialog(
+            icon: const Icon(Icons.auto_awesome),
+            title: Text(taskToEdit == null ? 'Accept New Quest' : 'Edit Quest'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  autofocus: true,
+                  controller: titleController,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => submitQuest(),
+                  decoration: InputDecoration(
+                    labelText: 'Quest Name',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Target Skill',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
-                  filled: true,
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Target Skill',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                  ),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selectedSkillId,
-                    isExpanded: true,
-                    items: [
-                      const DropdownMenuItem(
-                        value: 'none',
-                        child: Row(
-                          children: [
-                            Text('📝', style: TextStyle(fontSize: 16)),
-                            SizedBox(width: 12),
-                            Text(
-                              'None / General',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      ...appState.skills.map((skill) {
-                        return DropdownMenuItem(
-                          value: skill.id,
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: selectedSkillId,
+                      isExpanded: true,
+                      items: [
+                        const DropdownMenuItem(
+                          value: 'none',
                           child: Row(
                             children: [
+                              Text('📝', style: TextStyle(fontSize: 16)),
+                              SizedBox(width: 12),
                               Text(
-                                skill.icon,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                skill.name,
-                                style: const TextStyle(
+                                'None / General',
+                                style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 1.2,
                                 ),
                               ),
                             ],
                           ),
-                        );
-                      }),
-                    ],
-                    onChanged: (value) =>
-                        setDialogState(() => selectedSkillId = value),
+                        ),
+                        ...appState.skills.map((skill) {
+                          return DropdownMenuItem(
+                            value: skill.id,
+                            child: Row(
+                              children: [
+                                Text(
+                                  skill.icon,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  skill.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                      onChanged: (value) =>
+                          setDialogState(() => selectedSkillId = value),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Difficulty (1=20%, 5=100%)',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Difficulty (1=20%, 5=100%)',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(5, (index) {
-                  final diff = index + 1;
-                  final isSelected = selectedDifficulty == diff;
-                  final colorScheme = Theme.of(context).colorScheme;
-                  return InkWell(
-                    onTap: () =>
-                        setDialogState(() => selectedDifficulty = diff),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? colorScheme.primary
-                            : colorScheme.surfaceContainerHighest,
-                        border: Border.all(
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(5, (index) {
+                    final diff = index + 1;
+                    final isSelected = selectedDifficulty == diff;
+                    final colorScheme = Theme.of(context).colorScheme;
+                    return InkWell(
+                      onTap: () =>
+                          setDialogState(() => selectedDifficulty = diff),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
                           color: isSelected
                               ? colorScheme.primary
-                              : Colors.transparent,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$diff',
-                          style: TextStyle(
+                              : colorScheme.surfaceContainerHighest,
+                          border: Border.all(
                             color: isSelected
-                                ? colorScheme.onPrimary
-                                : colorScheme.onSurface,
-                            fontWeight: isSelected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            fontSize: 16,
+                                ? colorScheme.primary
+                                : Colors.transparent,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$diff',
+                            style: TextStyle(
+                              color: isSelected
+                                  ? colorScheme.onPrimary
+                                  : colorScheme.onSurface,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          final TimeOfDay? picked = await showTimePicker(
+                            context: context,
+                            initialTime: selectedTime ?? TimeOfDay.now(),
+                          );
+                          if (picked != null) {
+                            setDialogState(() {
+                              selectedTime = picked;
+                              timeWasCleared = false;
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.access_time_rounded, size: 18),
+                        label: Text(
+                          selectedTime == null
+                              ? 'Add Time (Optional)'
+                              : 'Time: ${selectedTime!.format(context)}',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                       ),
                     ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final TimeOfDay? picked = await showTimePicker(
-                          context: context,
-                          initialTime: selectedTime ?? TimeOfDay.now(),
-                        );
-                        if (picked != null) {
+                    if (selectedTime != null) ...[
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        onPressed: () {
                           setDialogState(() {
-                            selectedTime = picked;
-                            timeWasCleared = false;
+                            selectedTime = null;
+                            timeWasCleared = true;
                           });
-                        }
-                      },
-                      icon: const Icon(Icons.access_time_rounded, size: 18),
-                      label: Text(
-                        selectedTime == null
-                            ? 'Add Time (Optional)'
-                            : 'Time: ${selectedTime!.format(context)}',
+                        },
+                        tooltip: 'Clear time',
                       ),
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (selectedTime != null) ...[
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.clear, color: Colors.grey),
-                      onPressed: () {
-                        setDialogState(() {
-                          selectedTime = null;
-                          timeWasCleared = true;
-                        });
-                      },
-                      tooltip: 'Clear time',
-                    ),
+                    ],
                   ],
-                ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: submitQuest,
+                child: Text(taskToEdit == null ? 'Accept Quest' : 'Save Quest'),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: submitQuest,
-              child: Text(taskToEdit == null ? 'Accept Quest' : 'Save Quest'),
-            ),
-          ],
         ),
       ),
     );
