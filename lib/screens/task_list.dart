@@ -18,6 +18,7 @@ class TodayTasksScreen extends StatefulWidget {
 
 class _TodayTasksScreenState extends State<TodayTasksScreen> {
   late DateTime _selectedDate;
+  late DateTime _timelineFocusDate;
   late DateTime _baseDate;
   late PageController _pageController;
   final int _initialPage = 10000;
@@ -35,6 +36,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     super.initState();
     _baseDate = DateUtils.dateOnly(DateTime.now());
     _selectedDate = _baseDate;
+    _timelineFocusDate = _baseDate;
     _pageController = PageController(initialPage: _initialPage);
     WidgetsBinding.instance.addPostFrameCallback((_) => _centerSelectedDate());
   }
@@ -46,17 +48,33 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     super.dispose();
   }
 
-  void _centerSelectedDate() {
-    if (_dateScrollController.hasClients) {
-      final screenWidth = MediaQuery.of(context).size.width;
-      final itemWidth = (screenWidth - 32) / 7;
-      // Scroll to exactly 1 item width to hide the Star icon (index 0)
-      // and center index 4 (the selected date) perfectly.
-      _dateScrollController.animateTo(
-        itemWidth,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+  Future<void> _centerSelectedDate() async {
+    if (!_dateScrollController.hasClients) return;
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final itemWidth = (screenWidth - 32) / 7;
+
+    final diffDays = _selectedDate.difference(_timelineFocusDate).inDays;
+    if (diffDays == 0) {
+      if ((_dateScrollController.offset - itemWidth).abs() > 1.0) {
+        _dateScrollController.jumpTo(itemWidth);
+      }
+      return;
+    }
+
+    final targetOffset = itemWidth + (diffDays * itemWidth);
+
+    await _dateScrollController.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
+
+    if (mounted) {
+      setState(() {
+        _timelineFocusDate = _selectedDate;
+      });
+      _dateScrollController.jumpTo(itemWidth);
     }
   }
 
@@ -198,41 +216,63 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
             _buildDateSelector(context),
             const Divider(height: 1),
             Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: (index) {
-                  final newDate = _baseDate.add(
-                    Duration(days: index - _initialPage),
-                  );
-                  if (!DateUtils.isSameDay(newDate, _selectedDate)) {
-                    setState(() {
-                      _selectedDate = newDate;
-                      _isStarredView = false;
-                    });
-                    _centerSelectedDate();
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification.depth != 0) return false;
+
+                  void checkAndSnap(int settledPage) {
+                    final newDate = _baseDate.add(
+                      Duration(days: settledPage - _initialPage),
+                    );
+                    if (!DateUtils.isSameDay(newDate, _selectedDate)) {
+                      setState(() {
+                        _selectedDate = newDate;
+                        _isStarredView = false;
+                      });
+                      _centerSelectedDate();
+                    }
                   }
+
+                  if (notification is ScrollUpdateNotification) {
+                    final page = _pageController.page;
+                    if (page != null && notification.dragDetails == null) {
+                      final settled = page.round();
+                      if ((page - settled).abs() < 0.1) {
+                        checkAndSnap(settled);
+                      }
+                    }
+                  } else if (notification is ScrollEndNotification) {
+                    final settled =
+                        _pageController.page?.round() ?? _initialPage;
+                    checkAndSnap(settled);
+                  }
+                  return false;
                 },
-                itemBuilder: (context, index) {
-                  final pageDate = _baseDate.add(
-                    Duration(days: index - _initialPage),
-                  );
-                  final pageTasks = _isStarredView
-                      ? appState.tasks.where((t) => t.isStarred).toList()
-                      : appState.getTasksForDate(pageDate);
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemBuilder: (context, index) {
+                    final pageDate = _baseDate.add(
+                      Duration(days: index - _initialPage),
+                    );
+                    final pageTasks = _isStarredView
+                        ? appState.tasks.where((t) => t.isStarred).toList()
+                        : appState.getTasksForDate(pageDate);
 
-                  final dateStr = DateFormat('yyyy-MM-dd').format(pageDate);
-                  final active = pageTasks.where((t) {
-                    if (t.isPinned) return !t.completedDates.contains(dateStr);
-                    return !t.isCompleted;
-                  }).toList();
+                    final dateStr = DateFormat('yyyy-MM-dd').format(pageDate);
+                    final active = pageTasks.where((t) {
+                      if (t.isPinned)
+                        return !t.completedDates.contains(dateStr);
+                      return !t.isCompleted;
+                    }).toList();
 
-                  final completed = pageTasks.where((t) {
-                    if (t.isPinned) return t.completedDates.contains(dateStr);
-                    return t.isCompleted;
-                  }).toList();
+                    final completed = pageTasks.where((t) {
+                      if (t.isPinned) return t.completedDates.contains(dateStr);
+                      return t.isCompleted;
+                    }).toList();
 
-                  return _buildTaskList(context, active, completed, pageDate);
-                },
+                    return _buildTaskList(context, active, completed, pageDate);
+                  },
+                ),
               ),
             ),
           ],
@@ -250,9 +290,9 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final itemWidth = (screenWidth - 32) / 7;
 
-    // Generate dates around the selected date - all normalized to midnight
+    // Generate dates around the timeline focus date - all normalized to midnight
     final dates = List.generate(7, (index) {
-      return _selectedDate.add(Duration(days: index - 3));
+      return _timelineFocusDate.add(Duration(days: index - 3));
     });
 
     return Container(
@@ -284,8 +324,6 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
             );
           } else if (index < dates.length + 1) {
             final date = dates[index - 1];
-            final isSelected =
-                !_isStarredView && DateUtils.isSameDay(date, _selectedDate);
             final label = _getDateLabel(date);
 
             return SizedBox(
@@ -298,36 +336,70 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
                   );
-                  setState(() {
-                    _selectedDate = date;
-                    _isStarredView = false;
-                  });
                 },
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: isSelected
-                            ? colorScheme.primary
-                            : colorScheme.onSurfaceVariant,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                    ),
-                    if (isSelected)
-                      Container(
-                        margin: const EdgeInsets.only(top: 4),
-                        height: 3,
-                        width: 24,
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary,
-                          borderRadius: BorderRadius.circular(2),
+                child: AnimatedBuilder(
+                  animation: _pageController,
+                  builder: (context, child) {
+                    double page = _initialPage.toDouble();
+                    if (_pageController.hasClients &&
+                        _pageController.position.haveDimensions) {
+                      page = _pageController.page ?? _initialPage.toDouble();
+                    }
+
+                    final targetPage =
+                        _initialPage + date.difference(_baseDate).inDays;
+                    final selectedPage =
+                        _initialPage +
+                        _selectedDate.difference(_baseDate).inDays;
+                    final isSelected = targetPage == selectedPage;
+                    final isFocused = targetPage == page.round();
+
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          label,
+                          style: TextStyle(
+                            color: (!_isStarredView && isFocused)
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
+                            fontWeight: (!_isStarredView && isFocused)
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
                         ),
-                      ),
-                  ],
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          height: 3,
+                          width: itemWidth,
+                          alignment: Alignment.center,
+                          child: (!_isStarredView && isSelected)
+                              ? Transform.translate(
+                                  // As we swipe (page changes from selectedPage), localDelta changes.
+                                  // When swiping right (going to previous day), page decreases, localDelta decreases (becomes negative).
+                                  // We want the indicator to stay anchored on the selected item, but stretch in the direction of the swipe.
+                                  // For Google Tasks style: indicator stretches towards the new page, then when the page actually flips, it snaps fully.
+                                  offset: Offset(
+                                    (page - selectedPage) * itemWidth / 2,
+                                    0,
+                                  ),
+                                  child: Container(
+                                    width:
+                                        24.0 +
+                                        ((page - selectedPage).abs() *
+                                            itemWidth),
+                                    height: 3,
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primary,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox(height: 3),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             );
