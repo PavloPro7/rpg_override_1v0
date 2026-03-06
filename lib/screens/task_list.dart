@@ -18,6 +18,9 @@ class TodayTasksScreen extends StatefulWidget {
 
 class _TodayTasksScreenState extends State<TodayTasksScreen> {
   late DateTime _selectedDate;
+  late DateTime _baseDate;
+  late PageController _pageController;
+  final int _initialPage = 10000;
   bool _isCompletedExpanded = false;
   bool _isStarredView = false;
   final ScrollController _dateScrollController = ScrollController();
@@ -30,13 +33,16 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateUtils.dateOnly(DateTime.now());
+    _baseDate = DateUtils.dateOnly(DateTime.now());
+    _selectedDate = _baseDate;
+    _pageController = PageController(initialPage: _initialPage);
     WidgetsBinding.instance.addPostFrameCallback((_) => _centerSelectedDate());
   }
 
   @override
   void dispose() {
     _dateScrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -58,21 +64,6 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final colorScheme = Theme.of(context).colorScheme;
-
-    final tasksForDate = _isStarredView
-        ? appState.tasks.where((t) => t.isStarred).toList()
-        : appState.getTasksForDate(_selectedDate);
-    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
-
-    final activeTasks = tasksForDate.where((t) {
-      if (t.isPinned) return !t.completedDates.contains(dateStr);
-      return !t.isCompleted;
-    }).toList();
-
-    final completedTasks = tasksForDate.where((t) {
-      if (t.isPinned) return t.completedDates.contains(dateStr);
-      return t.isCompleted;
-    }).toList();
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -207,7 +198,42 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
             _buildDateSelector(context),
             const Divider(height: 1),
             Expanded(
-              child: _buildTaskList(context, activeTasks, completedTasks),
+              child: PageView.builder(
+                controller: _pageController,
+                onPageChanged: (index) {
+                  final newDate = _baseDate.add(
+                    Duration(days: index - _initialPage),
+                  );
+                  if (!DateUtils.isSameDay(newDate, _selectedDate)) {
+                    setState(() {
+                      _selectedDate = newDate;
+                      _isStarredView = false;
+                    });
+                    _centerSelectedDate();
+                  }
+                },
+                itemBuilder: (context, index) {
+                  final pageDate = _baseDate.add(
+                    Duration(days: index - _initialPage),
+                  );
+                  final pageTasks = _isStarredView
+                      ? appState.tasks.where((t) => t.isStarred).toList()
+                      : appState.getTasksForDate(pageDate);
+
+                  final dateStr = DateFormat('yyyy-MM-dd').format(pageDate);
+                  final active = pageTasks.where((t) {
+                    if (t.isPinned) return !t.completedDates.contains(dateStr);
+                    return !t.isCompleted;
+                  }).toList();
+
+                  final completed = pageTasks.where((t) {
+                    if (t.isPinned) return t.completedDates.contains(dateStr);
+                    return t.isCompleted;
+                  }).toList();
+
+                  return _buildTaskList(context, active, completed, pageDate);
+                },
+              ),
             ),
           ],
         ),
@@ -265,10 +291,18 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
             return SizedBox(
               width: itemWidth,
               child: InkWell(
-                onTap: () => setState(() {
-                  _selectedDate = date;
-                  _isStarredView = false;
-                }),
+                onTap: () {
+                  final diff = date.difference(_baseDate).inDays;
+                  _pageController.animateToPage(
+                    _initialPage + diff,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  );
+                  setState(() {
+                    _selectedDate = date;
+                    _isStarredView = false;
+                  });
+                },
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -308,6 +342,10 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                       context,
                     );
                     if (picked != null && picked != _selectedDate) {
+                      final diff = DateUtils.dateOnly(
+                        picked,
+                      ).difference(_baseDate).inDays;
+                      _pageController.jumpToPage(_initialPage + diff);
                       setState(() {
                         _selectedDate = DateUtils.dateOnly(picked);
                         _isStarredView = false;
@@ -349,6 +387,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     BuildContext context,
     List<Task> activeTasks,
     List<Task> completedTasks,
+    DateTime pageDate,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -385,14 +424,16 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                       ),
                     )
                   else
-                    ...activeTasks.map((task) => _buildTaskTile(context, task)),
+                    ...activeTasks.map(
+                      (task) => _buildTaskTile(context, task, pageDate),
+                    ),
 
                   if (completedTasks.isNotEmpty) ...[
                     const Divider(height: 1),
                     _buildCompletedHeader(context, completedTasks.length),
                     if (_isCompletedExpanded)
                       ...completedTasks.map(
-                        (task) => _buildTaskTile(context, task),
+                        (task) => _buildTaskTile(context, task, pageDate),
                       ),
                   ],
                 ],
@@ -404,7 +445,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     );
   }
 
-  Widget _buildTaskTile(BuildContext context, Task task) {
+  Widget _buildTaskTile(BuildContext context, Task task, DateTime pageDate) {
     final appState = Provider.of<AppState>(context, listen: false);
     final taskSkillId = task.skillId;
     final skill = taskSkillId == 'none'
@@ -418,7 +459,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
 
     final colorScheme = Theme.of(context).colorScheme;
     final isSelected = _selectedTaskIds.contains(task.id);
-    final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+    final dateStr = DateFormat('yyyy-MM-dd').format(pageDate);
     final isDone = task.isPinned
         ? task.completedDates.contains(dateStr)
         : task.isCompleted;
@@ -514,7 +555,7 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                                         if (mounted) {
                                           appState.completeTask(
                                             task.id,
-                                            onDate: _selectedDate,
+                                            onDate: pageDate,
                                           );
                                           setState(() {
                                             _animatingTaskIds.remove(task.id);
