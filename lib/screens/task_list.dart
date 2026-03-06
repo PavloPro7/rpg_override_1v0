@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
@@ -181,12 +182,35 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                 ),
               ],
             ),
-      body: Column(
-        children: [
-          _buildDateSelector(context),
-          const Divider(height: 1),
-          Expanded(child: _buildTaskList(context, activeTasks, completedTasks)),
-        ],
+      body: Focus(
+        autofocus: true,
+        onKeyEvent: (node, event) {
+          if (event is KeyDownEvent) {
+            final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+            if ((event.logicalKey == LogicalKeyboardKey.equal ||
+                    event.logicalKey == LogicalKeyboardKey.add) &&
+                isShiftPressed) {
+              _showAddTaskDialog(context);
+              return KeyEventResult.handled;
+            }
+            if (event.logicalKey == LogicalKeyboardKey.delete &&
+                _isSelectionMode) {
+              appState.deleteTasks(_selectedTaskIds.toList());
+              setState(() => _selectedTaskIds.clear());
+              return KeyEventResult.handled;
+            }
+          }
+          return KeyEventResult.ignored;
+        },
+        child: Column(
+          children: [
+            _buildDateSelector(context),
+            const Divider(height: 1),
+            Expanded(
+              child: _buildTaskList(context, activeTasks, completedTasks),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddTaskDialog(context),
