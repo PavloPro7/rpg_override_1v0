@@ -10,12 +10,16 @@ import '../models/task.dart';
 class TodayTasksScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
   final VoidCallback? onSettingsTap;
+  final VoidCallback? onBackTap;
   final DateTime? initialDate;
+  final bool showBackButton;
   const TodayTasksScreen({
     super.key,
     this.onProfileTap,
     this.onSettingsTap,
+    this.onBackTap,
     this.initialDate,
+    this.showBackButton = false,
   });
 
   @override
@@ -203,10 +207,15 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
               centerTitle: true,
-              leading: IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: widget.onSettingsTap,
-              ),
+              leading: widget.showBackButton
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: widget.onBackTap,
+                    )
+                  : IconButton(
+                      icon: const Icon(Icons.settings),
+                      onPressed: widget.onSettingsTap,
+                    ),
               actions: [
                 Padding(
                   padding: const EdgeInsets.only(right: 16.0),

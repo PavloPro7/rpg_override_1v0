@@ -58,7 +58,7 @@ class AppCalendar extends StatelessWidget {
         markerBuilder: (context, date, events) {
           if (events.isEmpty) return const SizedBox();
           return Positioned(
-            bottom: 6,
+            bottom: 7,
             child: Container(
               width: 5,
               height: 5,

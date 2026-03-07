@@ -20,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   Timer? _verificationTimer;
   DateTime? _targetDateForTasks;
+  bool _cameFromDashboard = false;
 
   @override
   void initState() {
@@ -52,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onDateSelected: (date) {
         setState(() {
           _targetDateForTasks = date;
+          _cameFromDashboard = true;
           _selectedIndex = 2; // Tasks view
         });
       },
@@ -60,8 +62,21 @@ class _HomeScreenState extends State<HomeScreen> {
     TodayTasksScreen(
       key: ValueKey(_targetDateForTasks),
       initialDate: _targetDateForTasks,
-      onProfileTap: () => setState(() => _selectedIndex = 3),
-      onSettingsTap: () => setState(() => _selectedIndex = 4),
+      showBackButton: _cameFromDashboard,
+      onBackTap: () {
+        setState(() {
+          _cameFromDashboard = false;
+          _selectedIndex = 0; // Dashboard view
+        });
+      },
+      onProfileTap: () => setState(() {
+        _cameFromDashboard = false;
+        _selectedIndex = 3;
+      }),
+      onSettingsTap: () => setState(() {
+        _cameFromDashboard = false;
+        _selectedIndex = 4;
+      }),
     ),
     const ProfileScreen(),
     const SettingsScreen(),
@@ -113,7 +128,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => setState(() => _selectedIndex = 2),
+        onPressed: () {
+          setState(() {
+            _cameFromDashboard = false;
+            _selectedIndex = 2;
+          });
+        },
         backgroundColor: _selectedIndex == 2
             ? Theme.of(context).colorScheme.primary
             : Theme.of(context).colorScheme.primaryContainer,
@@ -136,7 +156,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return InkWell(
-      onTap: () => setState(() => _selectedIndex = index),
+      onTap: () {
+        setState(() {
+          _cameFromDashboard = false;
+          _selectedIndex = index;
+        });
+      },
       borderRadius: BorderRadius.circular(12),
       child: Column(
         mainAxisSize: MainAxisSize.min,
