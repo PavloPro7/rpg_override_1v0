@@ -853,14 +853,17 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              filter: ImageFilter.blur(
+                sigmaX: 5,
+                sigmaY: 5,
+              ), // Reduced by 3x per request
               child: Dialog(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(28),
                 ),
                 backgroundColor: colorScheme.surfaceContainerHighest
-                    .withOpacity(0.55),
+                    .withOpacity(0.90), // Much less transparent
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
