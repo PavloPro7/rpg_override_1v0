@@ -34,10 +34,12 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
   final int _initialPage = 10000;
   bool _isCompletedExpanded = false;
   bool _isStarredView = false;
-  final ScrollController _dateScrollController = ScrollController();
+  late ScrollController _dateScrollController;
+  bool _initializedScrollController = false;
   final Set<String> _selectedTaskIds = {};
   final Set<String> _animatingTaskIds = {};
   final Set<String> _fadingTaskIds = {};
+  bool _isAnimatingToPage = false;
 
   bool get _isSelectionMode => _selectedTaskIds.isNotEmpty;
 
@@ -52,6 +54,19 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     final diff = _selectedDate.difference(_baseDate).inDays;
     _pageController = PageController(initialPage: _initialPage + diff);
     WidgetsBinding.instance.addPostFrameCallback((_) => _centerSelectedDate());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initializedScrollController) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      final itemWidth = (screenWidth - 32) / 7;
+      _dateScrollController = ScrollController(
+        initialScrollOffset: 14 * itemWidth,
+      );
+      _initializedScrollController = true;
+    }
   }
 
   @override
@@ -96,28 +111,31 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final itemWidth = (screenWidth - 32) / 7;
+    final parkOffset = 14 * itemWidth;
 
     final diffDays = _selectedDate.difference(_timelineFocusDate).inDays;
     if (diffDays == 0) {
-      if ((_dateScrollController.offset - itemWidth).abs() > 1.0) {
-        _dateScrollController.jumpTo(itemWidth);
+      if ((_dateScrollController.offset - parkOffset).abs() > 1.0) {
+        _dateScrollController.jumpTo(parkOffset);
       }
       return;
     }
 
-    final targetOffset = itemWidth + (diffDays * itemWidth);
+    final targetOffset = parkOffset + (diffDays * itemWidth);
 
+    _isAnimatingToPage = true;
     await _dateScrollController.animateTo(
-      targetOffset,
+      targetOffset.clamp(0.0, _dateScrollController.position.maxScrollExtent),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
     );
+    _isAnimatingToPage = false;
 
     if (mounted) {
       setState(() {
         _timelineFocusDate = _selectedDate;
       });
-      _dateScrollController.jumpTo(itemWidth);
+      _dateScrollController.jumpTo(parkOffset);
     }
   }
 
@@ -281,6 +299,8 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                   if (notification.depth != 0) return false;
 
                   void checkAndSnap(int settledPage) {
+                    if (_isAnimatingToPage) return;
+
                     final newDate = _baseDate.add(
                       Duration(days: settledPage - _initialPage),
                     );
@@ -351,8 +371,10 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     final itemWidth = (screenWidth - 32) / 7;
 
     // Generate dates around the timeline focus date - all normalized to midnight
-    final dates = List.generate(7, (index) {
-      return _timelineFocusDate.add(Duration(days: index - 3));
+    // We generate 35 items so the scroll container has physically 14 items
+    // to the left and 14 items to the right to animate through smoothly!
+    final dates = List.generate(35, (index) {
+      return _timelineFocusDate.add(Duration(days: index - 17));
     });
 
     return Container(
@@ -369,13 +391,25 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
           return SizedBox(
             width: itemWidth,
             child: InkWell(
-              onTap: () {
+              onTap: () async {
                 final diff = date.difference(_baseDate).inDays;
-                _pageController.animateToPage(
-                  _initialPage + diff,
+                final targetPage = _initialPage + diff;
+
+                if (_pageController.page?.round() == targetPage) return;
+
+                setState(() {
+                  _selectedDate = date;
+                  _isStarredView = false;
+                });
+                _centerSelectedDate();
+
+                _isAnimatingToPage = true;
+                await _pageController.animateToPage(
+                  targetPage,
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
                 );
+                _isAnimatingToPage = false;
               },
               child: AnimatedBuilder(
                 animation: _pageController,
