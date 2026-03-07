@@ -21,6 +21,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _verificationTimer;
   DateTime? _targetDateForTasks;
   bool _cameFromDashboard = false;
+  final GlobalKey<TodayTasksScreenState> _taskListKey =
+      GlobalKey<TodayTasksScreenState>();
 
   @override
   void initState() {
@@ -60,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ),
     SkillsScreen(onProfileTap: () => setState(() => _selectedIndex = 3)),
     TodayTasksScreen(
-      key: ValueKey(_targetDateForTasks),
+      key: _taskListKey,
       initialDate: _targetDateForTasks,
       showBackButton: _cameFromDashboard,
       onBackTap: () {
@@ -85,95 +87,116 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       extendBody: true,
-      body: _pages[_selectedIndex],
+      body: Stack(
+        children: [
+          _pages[_selectedIndex],
+          // Gradient shadow (Moved from nav bar to body to avoid pushing FAB too high)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: IgnorePointer(
+              child: Container(
+                height: 150,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      colorScheme.surface.withOpacity(0.0),
+                      colorScheme.surface.withOpacity(0.6),
+                      colorScheme.surface.withOpacity(0.9),
+                      colorScheme.surface,
+                    ],
+                    stops: const [0.0, 0.4, 0.7, 1.0],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       bottomNavigationBar: _buildBottomNav(context, appState),
+      floatingActionButton: _selectedIndex == 2
+          ? Padding(
+              padding: const EdgeInsets.only(
+                bottom: 2.0, // Reduced by 30px per request
+                right: 8.0,
+              ),
+              child: FloatingActionButton(
+                onPressed: () {
+                  _taskListKey.currentState?.showAddTask();
+                },
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+                shape: const CircleBorder(),
+                child: const Icon(Icons.add),
+              ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
   Widget _buildBottomNav(BuildContext context, AppState appState) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.only(left: 12, right: 12, bottom: 24),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildNavPill(
-              context,
-              children: [
-                _buildNavItem(
-                  0,
-                  Icons.dashboard_outlined,
-                  Icons.dashboard,
-                  'Stats',
-                  appState,
-                ),
-                _buildNavItem(
-                  1,
-                  Icons.bar_chart_outlined,
-                  Icons.bar_chart,
-                  'Skills',
-                  appState,
-                ),
-              ],
-            ),
-            _buildNavPill(
-              context,
-              children: [
-                _buildNavItem(
-                  2,
-                  Icons.today_outlined,
-                  Icons.today,
-                  'Quests',
-                  appState,
-                ),
-              ],
-            ),
-            _buildNavPill(
-              context,
-              children: [
-                _buildNavItem(
-                  4,
-                  Icons.settings_outlined,
-                  Icons.settings,
-                  'Settings',
-                  appState,
-                ),
-                _buildNavItem(
-                  3,
-                  Icons.person_outline_rounded,
-                  Icons.person_rounded,
-                  'Profile',
-                  appState,
-                ),
-              ],
-            ),
-          ],
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavItem(
+                0,
+                Icons.dashboard_outlined,
+                Icons.dashboard,
+                'Stats',
+                appState,
+              ),
+              _buildNavItem(
+                1,
+                Icons.bar_chart_outlined,
+                Icons.bar_chart,
+                'Skills',
+                appState,
+              ),
+              _buildNavItem(
+                2,
+                Icons.today_outlined,
+                Icons.today,
+                'Quests',
+                appState,
+              ),
+              _buildNavItem(
+                4,
+                Icons.settings_outlined,
+                Icons.settings,
+                'Settings',
+                appState,
+              ),
+              _buildNavItem(
+                3,
+                Icons.person_outline_rounded,
+                Icons.person_rounded,
+                'Profile',
+                appState,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildNavPill(BuildContext context, {required List<Widget> children}) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      child: Row(mainAxisSize: MainAxisSize.min, children: children),
-    );
-  }
+  // Deprecated individual pills; now a unified pill.
 
   Widget _buildNavItem(
     int index,
@@ -236,15 +259,18 @@ class _HomeScreenState extends State<HomeScreen> {
             _selectedIndex = index;
           });
         },
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(100),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ), // Perfect circular/pill dimension
           decoration: BoxDecoration(
             color: isSelected
                 ? colorScheme.primary.withOpacity(0.12)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(100),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

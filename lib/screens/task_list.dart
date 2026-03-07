@@ -24,10 +24,10 @@ class TodayTasksScreen extends StatefulWidget {
   });
 
   @override
-  State<TodayTasksScreen> createState() => _TodayTasksScreenState();
+  State<TodayTasksScreen> createState() => TodayTasksScreenState();
 }
 
-class _TodayTasksScreenState extends State<TodayTasksScreen> {
+class TodayTasksScreenState extends State<TodayTasksScreen> {
   late DateTime _selectedDate;
   late DateTime _timelineFocusDate;
   late DateTime _baseDate;
@@ -359,12 +359,10 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddTaskDialog(context),
-        child: const Icon(Icons.add),
-      ),
     );
   }
+
+  void showAddTask() => _showAddTaskDialog(context);
 
   Widget _buildDateSelector(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
