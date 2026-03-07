@@ -84,6 +84,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+
     return Scaffold(
       body: _pages[_selectedIndex],
       bottomNavigationBar: BottomAppBar(
@@ -97,6 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icons.dashboard_outlined,
                 Icons.dashboard,
                 'Stats',
+                appState,
               ),
             ),
             Expanded(
@@ -105,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icons.bar_chart_outlined,
                 Icons.bar_chart,
                 'Skills',
+                appState,
               ),
             ),
             const SizedBox(width: 72), // Centered spacing for the FAB
@@ -114,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icons.person_outline_rounded,
                 Icons.person_rounded,
                 'Profile',
+                appState,
               ),
             ),
             Expanded(
@@ -122,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icons.settings_outlined,
                 Icons.settings,
                 'Settings',
+                appState,
               ),
             ),
           ],
@@ -151,9 +157,52 @@ class _HomeScreenState extends State<HomeScreen> {
     IconData icon,
     IconData selectedIcon,
     String label,
+    AppState appState,
   ) {
     final isSelected = _selectedIndex == index;
     final colorScheme = Theme.of(context).colorScheme;
+
+    Widget iconWidget;
+    if (label == 'Profile' && appState.avatarUrl != null) {
+      iconWidget = Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isSelected ? colorScheme.primary : Colors.transparent,
+            width: 2,
+          ),
+          image: DecorationImage(
+            image: NetworkImage(appState.avatarUrl!),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    } else if (label == 'Profile' && appState.avatarUrl == null) {
+      iconWidget = Container(
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: colorScheme.primaryContainer,
+          border: Border.all(
+            color: isSelected ? colorScheme.primary : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Icon(
+          Icons.person_rounded,
+          size: 16,
+          color: colorScheme.onPrimaryContainer,
+        ),
+      );
+    } else {
+      iconWidget = Icon(
+        isSelected ? selectedIcon : icon,
+        color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+      );
+    }
 
     return InkWell(
       onTap: () {
@@ -166,12 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            isSelected ? selectedIcon : icon,
-            color: isSelected
-                ? colorScheme.primary
-                : colorScheme.onSurfaceVariant,
-          ),
+          iconWidget,
           Text(
             label,
             style: TextStyle(

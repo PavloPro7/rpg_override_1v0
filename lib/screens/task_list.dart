@@ -213,28 +213,40 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                       onPressed: widget.onBackTap,
                     )
                   : IconButton(
-                      icon: const Icon(Icons.settings),
-                      onPressed: widget.onSettingsTap,
+                      icon: Icon(
+                        _isStarredView ? Icons.star : Icons.star_border,
+                        color: _isStarredView
+                            ? Colors.amber
+                            : colorScheme.onSurfaceVariant,
+                      ),
+                      onPressed: () =>
+                          setState(() => _isStarredView = !_isStarredView),
+                      tooltip: 'Starred Tasks',
                     ),
               actions: [
                 Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
-                  child: InkWell(
-                    onTap: widget.onProfileTap,
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: colorScheme.primaryContainer,
-                      backgroundImage: appState.avatarUrl != null
-                          ? NetworkImage(appState.avatarUrl!)
-                          : null,
-                      child: appState.avatarUrl == null
-                          ? Icon(
-                              Icons.person_rounded,
-                              size: 20,
-                              color: colorScheme.onPrimaryContainer,
-                            )
-                          : null,
-                    ),
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: IconButton(
+                    icon: const Icon(Icons.calendar_month),
+                    onPressed: () async {
+                      final DateTime? picked = await _showCustomDatePicker(
+                        context,
+                      );
+                      if (picked != null && picked != _selectedDate) {
+                        final diff = DateUtils.dateOnly(
+                          picked,
+                        ).difference(_baseDate).inDays;
+                        _pageController.jumpToPage(_initialPage + diff);
+                        setState(() {
+                          _selectedDate = DateUtils.dateOnly(picked);
+                          _isStarredView = false;
+                        });
+                        WidgetsBinding.instance.addPostFrameCallback(
+                          (_) => _centerSelectedDate(),
+                        );
+                      }
+                    },
+                    tooltip: 'Select date',
                   ),
                 ),
               ],
@@ -349,134 +361,82 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
       child: ListView.builder(
         controller: _dateScrollController,
         scrollDirection: Axis.horizontal,
-        itemCount: dates.length + 2, // Star + Dates + Calendar
+        itemCount: dates.length,
         itemBuilder: (context, index) {
-          if (index == 0) {
-            // Restore Starred View icon at the start
-            return SizedBox(
-              width: itemWidth,
-              child: Center(
-                child: IconButton(
-                  onPressed: () =>
-                      setState(() => _isStarredView = !_isStarredView),
-                  icon: Icon(
-                    _isStarredView ? Icons.star : Icons.star_border,
-                    color: _isStarredView
-                        ? Colors.amber
-                        : colorScheme.onSurfaceVariant,
-                  ),
-                  tooltip: 'Starred (Saved) Tasks',
-                  padding: EdgeInsets.zero,
-                ),
-              ),
-            );
-          } else if (index < dates.length + 1) {
-            final date = dates[index - 1];
-            final label = _getDateLabel(date);
+          final date = dates[index];
+          final label = _getDateLabel(date);
 
-            return SizedBox(
-              width: itemWidth,
-              child: InkWell(
-                onTap: () {
-                  final diff = date.difference(_baseDate).inDays;
-                  _pageController.animateToPage(
-                    _initialPage + diff,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
+          return SizedBox(
+            width: itemWidth,
+            child: InkWell(
+              onTap: () {
+                final diff = date.difference(_baseDate).inDays;
+                _pageController.animateToPage(
+                  _initialPage + diff,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
+              },
+              child: AnimatedBuilder(
+                animation: _pageController,
+                builder: (context, child) {
+                  final selectedPageNum =
+                      _initialPage + _selectedDate.difference(_baseDate).inDays;
+                  double page = selectedPageNum.toDouble();
+
+                  if (_pageController.hasClients &&
+                      _pageController.position.haveDimensions) {
+                    page = _pageController.page ?? page;
+                  }
+
+                  final isSelected = DateUtils.isSameDay(date, _selectedDate);
+
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          color: (!_isStarredView && isSelected)
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                          fontWeight: (!_isStarredView && isSelected)
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        height: 3,
+                        width: itemWidth,
+                        alignment: Alignment.center,
+                        child: (!_isStarredView && isSelected)
+                            ? Transform.translate(
+                                // This creates the Google Tasks stretch physics effect
+                                offset: Offset(
+                                  (page - selectedPageNum) * itemWidth / 2,
+                                  0,
+                                ),
+                                child: Container(
+                                  width:
+                                      24.0 +
+                                      ((page - selectedPageNum).abs() *
+                                          itemWidth),
+                                  height: 3,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              )
+                            : const SizedBox(height: 3),
+                      ),
+                    ],
                   );
                 },
-                child: AnimatedBuilder(
-                  animation: _pageController,
-                  builder: (context, child) {
-                    final selectedPageNum =
-                        _initialPage +
-                        _selectedDate.difference(_baseDate).inDays;
-                    double page = selectedPageNum.toDouble();
-
-                    if (_pageController.hasClients &&
-                        _pageController.position.haveDimensions) {
-                      page = _pageController.page ?? page;
-                    }
-
-                    final isSelected = DateUtils.isSameDay(date, _selectedDate);
-
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          label,
-                          style: TextStyle(
-                            color: (!_isStarredView && isSelected)
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant,
-                            fontWeight: (!_isStarredView && isSelected)
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.only(top: 4),
-                          height: 3,
-                          width: itemWidth,
-                          alignment: Alignment.center,
-                          child: (!_isStarredView && isSelected)
-                              ? Transform.translate(
-                                  // This creates the Google Tasks stretch physics effect
-                                  offset: Offset(
-                                    (page - selectedPageNum) * itemWidth / 2,
-                                    0,
-                                  ),
-                                  child: Container(
-                                    width:
-                                        24.0 +
-                                        ((page - selectedPageNum).abs() *
-                                            itemWidth),
-                                    height: 3,
-                                    decoration: BoxDecoration(
-                                      color: colorScheme.primary,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                )
-                              : const SizedBox(height: 3),
-                        ),
-                      ],
-                    );
-                  },
-                ),
               ),
-            );
-          } else {
-            // Calendar Icon for Date Picker
-            return SizedBox(
-              width: itemWidth,
-              child: Center(
-                child: IconButton(
-                  onPressed: () async {
-                    final DateTime? picked = await _showCustomDatePicker(
-                      context,
-                    );
-                    if (picked != null && picked != _selectedDate) {
-                      final diff = DateUtils.dateOnly(
-                        picked,
-                      ).difference(_baseDate).inDays;
-                      _pageController.jumpToPage(_initialPage + diff);
-                      setState(() {
-                        _selectedDate = DateUtils.dateOnly(picked);
-                        _isStarredView = false;
-                      });
-                      WidgetsBinding.instance.addPostFrameCallback(
-                        (_) => _centerSelectedDate(),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.calendar_month),
-                  tooltip: 'Select date',
-                  padding: EdgeInsets.zero,
-                ),
-              ),
-            );
-          }
+            ),
+          );
         },
       ),
     );
