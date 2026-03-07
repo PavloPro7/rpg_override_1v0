@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../widgets/radar_chart.dart';
+import '../widgets/app_calendar.dart';
 import 'settings_screen.dart';
-import 'package:table_calendar/table_calendar.dart';
 
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
-  const DashboardScreen({super.key, this.onProfileTap});
+  final void Function(DateTime)? onDateSelected;
+
+  const DashboardScreen({super.key, this.onProfileTap, this.onDateSelected});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -176,71 +178,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: TableCalendar(
-                    firstDay: DateTime.utc(2024, 1, 1),
-                    lastDay: DateTime.utc(2030, 12, 31),
+                  child: AppCalendar(
                     focusedDay: _focusedDay,
-                    selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                    selectedDay: _selectedDay,
                     onDaySelected: (selectedDay, focusedDay) {
                       setState(() {
                         _selectedDay = selectedDay;
                         _focusedDay = focusedDay;
                       });
-                    },
-                    availableGestures: AvailableGestures.none,
-                    calendarFormat: CalendarFormat.month,
-                    startingDayOfWeek: StartingDayOfWeek.monday,
-                    headerStyle: HeaderStyle(
-                      formatButtonVisible: false,
-                      titleCentered: true,
-                      titleTextStyle: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                      leftChevronIcon: Icon(
-                        Icons.chevron_left,
-                        color: colorScheme.primary,
-                      ),
-                      rightChevronIcon: Icon(
-                        Icons.chevron_right,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    calendarStyle: CalendarStyle(
-                      todayDecoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.3),
-                        shape: BoxShape.circle,
-                      ),
-                      selectedDecoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      todayTextStyle: TextStyle(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    calendarBuilders: CalendarBuilders(
-                      markerBuilder: (context, date, events) {
-                        if (events.isEmpty) return const SizedBox();
-                        return Positioned(
-                          bottom: 6,
-                          child: Container(
-                            width: 6,
-                            height: 6,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: colorScheme.secondary,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    eventLoader: (day) {
-                      return appState.tasks.where((task) {
-                        return isSameDay(task.date, day);
-                      }).toList();
+                      if (widget.onDateSelected != null) {
+                        widget.onDateSelected!(selectedDay);
+                      }
                     },
                   ),
                 ),

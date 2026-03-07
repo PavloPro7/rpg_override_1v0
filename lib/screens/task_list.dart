@@ -3,14 +3,20 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
-import 'package:table_calendar/table_calendar.dart';
+import '../widgets/app_calendar.dart';
 import '../providers/app_state.dart';
 import '../models/task.dart';
 
 class TodayTasksScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
   final VoidCallback? onSettingsTap;
-  const TodayTasksScreen({super.key, this.onProfileTap, this.onSettingsTap});
+  final DateTime? initialDate;
+  const TodayTasksScreen({
+    super.key,
+    this.onProfileTap,
+    this.onSettingsTap,
+    this.initialDate,
+  });
 
   @override
   State<TodayTasksScreen> createState() => _TodayTasksScreenState();
@@ -35,9 +41,12 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
   void initState() {
     super.initState();
     _baseDate = DateUtils.dateOnly(DateTime.now());
-    _selectedDate = _baseDate;
-    _timelineFocusDate = _baseDate;
-    _pageController = PageController(initialPage: _initialPage);
+    _selectedDate = widget.initialDate != null
+        ? DateUtils.dateOnly(widget.initialDate!)
+        : _baseDate;
+    _timelineFocusDate = _selectedDate;
+    final diff = _selectedDate.difference(_baseDate).inDays;
+    _pageController = PageController(initialPage: _initialPage + diff);
     WidgetsBinding.instance.addPostFrameCallback((_) => _centerSelectedDate());
   }
 
@@ -46,6 +55,36 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     _dateScrollController.dispose();
     _pageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(TodayTasksScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialDate != null &&
+        widget.initialDate != oldWidget.initialDate) {
+      final newDate = DateUtils.dateOnly(widget.initialDate!);
+      // Only recalculate if the date is actually different from our current state
+      if (!DateUtils.isSameDay(newDate, _selectedDate)) {
+        setState(() {
+          _selectedDate = newDate;
+          _isStarredView = false;
+        });
+        final diff = _selectedDate.difference(_baseDate).inDays;
+
+        // Jump the page controller instantly
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(_initialPage + diff);
+        } else {
+          // If somehow lost clients, recreate
+          _pageController = PageController(initialPage: _initialPage + diff);
+        }
+
+        // Re-center the horizontal date selector
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _centerSelectedDate(),
+        );
+      }
+    }
   }
 
   Future<void> _centerSelectedDate() async {
@@ -340,19 +379,17 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                 child: AnimatedBuilder(
                   animation: _pageController,
                   builder: (context, child) {
-                    double page = _initialPage.toDouble();
-                    if (_pageController.hasClients &&
-                        _pageController.position.haveDimensions) {
-                      page = _pageController.page ?? _initialPage.toDouble();
-                    }
-
-                    final targetPage =
-                        _initialPage + date.difference(_baseDate).inDays;
-                    final selectedPage =
+                    final selectedPageNum =
                         _initialPage +
                         _selectedDate.difference(_baseDate).inDays;
-                    final isSelected = targetPage == selectedPage;
-                    final isFocused = targetPage == page.round();
+                    double page = selectedPageNum.toDouble();
+
+                    if (_pageController.hasClients &&
+                        _pageController.position.haveDimensions) {
+                      page = _pageController.page ?? page;
+                    }
+
+                    final isSelected = DateUtils.isSameDay(date, _selectedDate);
 
                     return Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -360,10 +397,10 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                         Text(
                           label,
                           style: TextStyle(
-                            color: (!_isStarredView && isFocused)
+                            color: (!_isStarredView && isSelected)
                                 ? colorScheme.primary
                                 : colorScheme.onSurfaceVariant,
-                            fontWeight: (!_isStarredView && isFocused)
+                            fontWeight: (!_isStarredView && isSelected)
                                 ? FontWeight.bold
                                 : FontWeight.normal,
                           ),
@@ -375,18 +412,15 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                           alignment: Alignment.center,
                           child: (!_isStarredView && isSelected)
                               ? Transform.translate(
-                                  // As we swipe (page changes from selectedPage), localDelta changes.
-                                  // When swiping right (going to previous day), page decreases, localDelta decreases (becomes negative).
-                                  // We want the indicator to stay anchored on the selected item, but stretch in the direction of the swipe.
-                                  // For Google Tasks style: indicator stretches towards the new page, then when the page actually flips, it snaps fully.
+                                  // This creates the Google Tasks stretch physics effect
                                   offset: Offset(
-                                    (page - selectedPage) * itemWidth / 2,
+                                    (page - selectedPageNum) * itemWidth / 2,
                                     0,
                                   ),
                                   child: Container(
                                     width:
                                         24.0 +
-                                        ((page - selectedPage).abs() *
+                                        ((page - selectedPageNum).abs() *
                                             itemWidth),
                                     height: 3,
                                     decoration: BoxDecoration(
@@ -422,6 +456,9 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                         _selectedDate = DateUtils.dateOnly(picked);
                         _isStarredView = false;
                       });
+                      WidgetsBinding.instance.addPostFrameCallback(
+                        (_) => _centerSelectedDate(),
+                      );
                     }
                   },
                   icon: const Icon(Icons.calendar_month),
@@ -807,7 +844,6 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     DateTime focusedDay = _selectedDate;
     DateTime? selectedDay = _selectedDate;
-    final appState = context.read<AppState>();
 
     return showDialog<DateTime>(
       context: context,
@@ -833,89 +869,12 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    TableCalendar(
-                      firstDay: DateTime.utc(2000, 1, 1),
-                      lastDay: DateTime.utc(2100, 12, 31),
+                    AppCalendar(
                       focusedDay: focusedDay,
-                      selectedDayPredicate: (day) =>
-                          isSameDay(selectedDay, day),
+                      selectedDay: selectedDay,
                       onDaySelected: (selected, focused) {
-                        setState(() {
-                          selectedDay = selected;
-                          focusedDay = focused;
-                        });
+                        Navigator.pop(dialogContext, selected);
                       },
-                      availableGestures: AvailableGestures.none,
-                      calendarFormat: CalendarFormat.month,
-                      startingDayOfWeek: StartingDayOfWeek.monday,
-                      headerStyle: HeaderStyle(
-                        formatButtonVisible: false,
-                        titleCentered: true,
-                        titleTextStyle: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                        leftChevronIcon: Icon(
-                          Icons.chevron_left,
-                          color: colorScheme.primary,
-                        ),
-                        rightChevronIcon: Icon(
-                          Icons.chevron_right,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                      calendarStyle: CalendarStyle(
-                        todayDecoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha: 0.3),
-                          shape: BoxShape.circle,
-                        ),
-                        selectedDecoration: BoxDecoration(
-                          color: colorScheme.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        todayTextStyle: TextStyle(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      calendarBuilders: CalendarBuilders(
-                        markerBuilder: (context, date, events) {
-                          if (events.isEmpty) return const SizedBox();
-                          return Positioned(
-                            bottom: 6,
-                            child: Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: colorScheme.secondary,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      eventLoader: (day) {
-                        return appState.tasks.where((task) {
-                          return isSameDay(task.date, day);
-                        }).toList();
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: 8),
-                        FilledButton(
-                          onPressed: () =>
-                              Navigator.pop(dialogContext, selectedDay),
-                          child: const Text('OK'),
-                        ),
-                      ],
                     ),
                   ],
                 ),

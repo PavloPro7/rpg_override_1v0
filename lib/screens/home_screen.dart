@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   Timer? _verificationTimer;
+  DateTime? _targetDateForTasks;
 
   @override
   void initState() {
@@ -46,9 +47,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> get _pages => [
-    DashboardScreen(onProfileTap: () => setState(() => _selectedIndex = 3)),
+    DashboardScreen(
+      onProfileTap: () => setState(() => _selectedIndex = 3),
+      onDateSelected: (date) {
+        setState(() {
+          _targetDateForTasks = date;
+          _selectedIndex = 2; // Tasks view
+        });
+      },
+    ),
     SkillsScreen(onProfileTap: () => setState(() => _selectedIndex = 3)),
     TodayTasksScreen(
+      key: ValueKey(_targetDateForTasks),
+      initialDate: _targetDateForTasks,
       onProfileTap: () => setState(() => _selectedIndex = 3),
       onSettingsTap: () => setState(() => _selectedIndex = 4),
     ),
