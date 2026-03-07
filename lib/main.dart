@@ -45,8 +45,15 @@ class MyApp extends StatelessWidget {
       themeMode: appState.themeMode,
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: Colors.deepPurple,
-        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.light,
+          surface: const Color(0xFFF3F4F6), // Soft light gray
+          surfaceContainerHighest: const Color(0xFFE5E7EB),
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          shape: CircleBorder(),
+        ),
         textTheme: GoogleFonts.robotoTextTheme(
           ThemeData.light().textTheme.apply(
             bodyColor: Colors.black87,
@@ -58,6 +65,9 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         colorSchemeSeed: Colors.deepPurple,
         brightness: Brightness.dark,
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          shape: CircleBorder(),
+        ),
         textTheme: GoogleFonts.interTextTheme(
           ThemeData.dark().textTheme.apply(
             bodyColor: Colors.white,

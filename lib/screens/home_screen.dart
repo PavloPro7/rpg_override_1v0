@@ -87,68 +87,91 @@ class _HomeScreenState extends State<HomeScreen> {
     final appState = context.watch<AppState>();
 
     return Scaffold(
+      extendBody: true,
       body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 5.0,
+      bottomNavigationBar: _buildBottomNav(context, appState),
+    );
+  }
+
+  Widget _buildBottomNav(BuildContext context, AppState appState) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(left: 12, right: 12, bottom: 24),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: _buildNavItem(
-                0,
-                Icons.dashboard_outlined,
-                Icons.dashboard,
-                'Stats',
-                appState,
-              ),
+            _buildNavPill(
+              context,
+              children: [
+                _buildNavItem(
+                  0,
+                  Icons.dashboard_outlined,
+                  Icons.dashboard,
+                  'Stats',
+                  appState,
+                ),
+                _buildNavItem(
+                  1,
+                  Icons.bar_chart_outlined,
+                  Icons.bar_chart,
+                  'Skills',
+                  appState,
+                ),
+              ],
             ),
-            Expanded(
-              child: _buildNavItem(
-                1,
-                Icons.bar_chart_outlined,
-                Icons.bar_chart,
-                'Skills',
-                appState,
-              ),
+            _buildNavPill(
+              context,
+              children: [
+                _buildNavItem(
+                  2,
+                  Icons.today_outlined,
+                  Icons.today,
+                  'Quests',
+                  appState,
+                ),
+              ],
             ),
-            const SizedBox(width: 72), // Centered spacing for the FAB
-            Expanded(
-              child: _buildNavItem(
-                3,
-                Icons.person_outline_rounded,
-                Icons.person_rounded,
-                'Profile',
-                appState,
-              ),
-            ),
-            Expanded(
-              child: _buildNavItem(
-                4,
-                Icons.settings_outlined,
-                Icons.settings,
-                'Settings',
-                appState,
-              ),
+            _buildNavPill(
+              context,
+              children: [
+                _buildNavItem(
+                  4,
+                  Icons.settings_outlined,
+                  Icons.settings,
+                  'Settings',
+                  appState,
+                ),
+                _buildNavItem(
+                  3,
+                  Icons.person_outline_rounded,
+                  Icons.person_rounded,
+                  'Profile',
+                  appState,
+                ),
+              ],
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _cameFromDashboard = false;
-            _selectedIndex = 2;
-          });
-        },
-        backgroundColor: _selectedIndex == 2
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.primaryContainer,
-        foregroundColor: _selectedIndex == 2
-            ? Theme.of(context).colorScheme.onPrimary
-            : Theme.of(context).colorScheme.onPrimaryContainer,
-        child: const Icon(Icons.today),
+    );
+  }
+
+  Widget _buildNavPill(BuildContext context, {required List<Widget> children}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      child: Row(mainAxisSize: MainAxisSize.min, children: children),
     );
   }
 
@@ -204,29 +227,43 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _cameFromDashboard = false;
-          _selectedIndex = index;
-        });
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          iconWidget,
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2.0),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _cameFromDashboard = false;
+            _selectedIndex = index;
+          });
+        },
+        borderRadius: BorderRadius.circular(24),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? colorScheme.primary.withOpacity(0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(24),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              iconWidget,
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.onSurfaceVariant,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

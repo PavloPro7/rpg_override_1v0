@@ -135,11 +135,12 @@ class SkillCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
-      elevation: 0,
+      elevation: 2,
+      shadowColor: colorScheme.onSurface.withOpacity(0.05),
       color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
         side: BorderSide(
           color: colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),

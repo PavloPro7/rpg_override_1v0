@@ -81,10 +81,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Card(
-                elevation: 0,
+                elevation: 2,
+                shadowColor: Colors.black.withOpacity(0.1),
                 color: colorScheme.surfaceContainerHighest,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(28),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
@@ -169,12 +170,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Card(
-                elevation: 0,
+                elevation: 2,
+                shadowColor: Colors.black.withOpacity(0.05),
                 color: colorScheme.surfaceContainerHighest.withValues(
                   alpha: 0.3,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(28),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -205,7 +207,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Card(
-                  elevation: 0,
+                  elevation: 2,
+                  shadowColor: Colors.black.withOpacity(0.05),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
                   color: colorScheme.surfaceContainerHighest.withValues(
                     alpha: 0.5,
                   ),
@@ -276,10 +282,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildCompactSkillCard(BuildContext context, dynamic skill) {
     final colorScheme = Theme.of(context).colorScheme;
     return Card(
-      elevation: 0,
+      elevation: 2,
+      shadowColor: skill.color.withOpacity(0.1),
       color: skill.color.withValues(alpha: 0.05),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         side: BorderSide(color: skill.color.withValues(alpha: 0.2)),
       ),
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -342,9 +349,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     return Card(
-      elevation: 0,
+      elevation: 2,
+      shadowColor: colorScheme.primary.withOpacity(0.1),
       color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Row(
@@ -404,10 +412,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     return Card(
-      elevation: 0,
+      elevation: 2,
+      shadowColor: colorScheme.onSurface.withOpacity(0.05),
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         side: BorderSide(color: colorScheme.outlineVariant),
       ),
       child: Padding(

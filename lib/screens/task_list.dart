@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
+import 'dart:ui';
 import '../widgets/app_calendar.dart';
 import '../providers/app_state.dart';
 import '../models/task.dart';
@@ -853,33 +854,38 @@ class _TodayTasksScreenState extends State<TodayTasksScreen> {
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Select Date',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
+            return BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Dialog(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                backgroundColor: colorScheme.surfaceContainerHighest
+                    .withOpacity(0.55),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Select Date',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    AppCalendar(
-                      focusedDay: focusedDay,
-                      selectedDay: selectedDay,
-                      onDaySelected: (selected, focused) {
-                        Navigator.pop(dialogContext, selected);
-                      },
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      AppCalendar(
+                        focusedDay: focusedDay,
+                        selectedDay: selectedDay,
+                        onDaySelected: (selected, focused) {
+                          Navigator.pop(dialogContext, selected);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
