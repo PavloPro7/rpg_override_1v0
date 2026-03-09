@@ -54,7 +54,12 @@ class SkillsScreen extends StatelessWidget {
         ],
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 8,
+          bottom: 120, // Added clearance for tap bar
+        ),
         itemCount: appState.skills.length,
         itemBuilder: (context, index) {
           final skill = appState.skills[index];

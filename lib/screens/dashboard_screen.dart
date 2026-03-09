@@ -258,7 +258,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 120), // Added clearance for tap bar
           ],
         ),
       ),

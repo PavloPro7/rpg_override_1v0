@@ -341,8 +341,9 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
 
                     final dateStr = DateFormat('yyyy-MM-dd').format(pageDate);
                     final active = pageTasks.where((t) {
-                      if (t.isPinned)
+                      if (t.isPinned) {
                         return !t.completedDates.contains(dateStr);
+                      }
                       return !t.isCompleted;
                     }).toList();
 

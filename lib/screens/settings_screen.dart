@@ -74,7 +74,7 @@ class SettingsScreen extends StatelessWidget {
                       vertical: 8,
                     ),
                   ),
-                  value: appState.defaultSkillId,
+                  initialValue: appState.defaultSkillId,
                   items: [
                     const DropdownMenuItem(value: null, child: Text('None')),
                     const DropdownMenuItem(
@@ -125,7 +125,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ]),
-            const SizedBox(height: 40),
+            const SizedBox(height: 120), // Added clearance for tap bar
           ],
         ),
       ),

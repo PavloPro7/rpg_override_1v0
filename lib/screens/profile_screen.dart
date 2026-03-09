@@ -149,6 +149,7 @@ class ProfileScreen extends StatelessWidget {
                       isDestructive: true,
                     ),
                   ]),
+                  const SizedBox(height: 120), // Added clearance for tap bar
                 ],
               ),
             ),
