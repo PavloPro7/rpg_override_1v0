@@ -141,7 +141,7 @@ class SkillCard extends StatelessWidget {
 
     return Card(
       elevation: 2,
-      shadowColor: colorScheme.onSurface.withOpacity(0.05),
+      shadowColor: colorScheme.onSurface.withValues(alpha: 0.05),
       color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(

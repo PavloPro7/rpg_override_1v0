@@ -105,9 +105,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      colorScheme.surface.withOpacity(0.0),
-                      colorScheme.surface.withOpacity(0.6),
-                      colorScheme.surface.withOpacity(0.9),
+                      colorScheme.surface.withValues(alpha: 0.0),
+                      colorScheme.surface.withValues(alpha: 0.6),
+                      colorScheme.surface.withValues(alpha: 0.9),
                       colorScheme.surface,
                     ],
                     stops: const [0.0, 0.4, 0.7, 1.0],
@@ -179,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 4,
                 Icons.settings_outlined,
                 Icons.settings,
-                'Settings',
+                'Config',
                 appState,
               ),
               _buildNavItem(
@@ -250,44 +250,49 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 2.0),
-      child: InkWell(
-        onTap: () {
-          setState(() {
-            _cameFromDashboard = false;
-            _selectedIndex = index;
-          });
-        },
-        borderRadius: BorderRadius.circular(100),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 8,
-          ), // Perfect circular/pill dimension
-          decoration: BoxDecoration(
-            color: isSelected
-                ? colorScheme.primary.withOpacity(0.12)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(100),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              iconWidget,
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isSelected
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+    return Flexible(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2.0),
+        child: InkWell(
+          onTap: () {
+            setState(() {
+              _cameFromDashboard = false;
+              _selectedIndex = index;
+            });
+          },
+          borderRadius: BorderRadius.circular(100),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 58,
+            height: 58,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? colorScheme.primary.withValues(alpha: 0.12)
+                  : Colors.transparent,
+              shape: BoxShape.circle,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                iconWidget,
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.fade,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

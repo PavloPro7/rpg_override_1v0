@@ -863,8 +863,9 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(28),
                 ),
-                backgroundColor: colorScheme.surfaceContainerHighest
-                    .withOpacity(0.90), // Much less transparent
+                backgroundColor: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.90,
+                ), // Much less transparent
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(

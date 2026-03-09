@@ -516,7 +516,7 @@ class ProfileScreen extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     return Card(
       elevation: 2,
-      shadowColor: colorScheme.onSurface.withOpacity(0.05),
+      shadowColor: colorScheme.onSurface.withValues(alpha: 0.05),
       color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(28),
