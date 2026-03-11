@@ -1019,7 +1019,12 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
-                      value: selectedSkillId,
+                      value: (selectedSkillId == null ||
+                              selectedSkillId == 'none' ||
+                              appState.skills
+                                  .any((s) => s.id == selectedSkillId))
+                          ? selectedSkillId
+                          : 'none',
                       isExpanded: true,
                       items: [
                         const DropdownMenuItem(

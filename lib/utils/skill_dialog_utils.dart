@@ -8,9 +8,7 @@ class SkillDialogUtils {
   static void showSkillDialog(BuildContext context, {Skill? skill}) {
     final isEditing = skill != null;
     final nameController = TextEditingController(text: skill?.name);
-    final categoryController = TextEditingController(text: skill?.category);
     final iconController = TextEditingController(text: skill?.icon ?? '⭐');
-    double difficulty = skill?.difficulty ?? 1.0;
     double startLevel = skill?.level.toDouble() ?? 1.0;
     Color selectedColor = skill?.color ?? Colors.blue;
 
@@ -32,20 +30,14 @@ class SkillDialogUtils {
           appState.updateSkill(
             skill.copyWith(
               name: nameController.text,
-              category: categoryController.text,
               icon: iconController.text,
-              difficulty: difficulty,
               color: selectedColor,
             ),
           );
         } else {
           appState.addSkill(
             nameController.text,
-            categoryController.text.isEmpty
-                ? 'General'
-                : categoryController.text,
             selectedColor,
-            difficulty,
             startLevel.toInt(),
             iconController.text.isEmpty ? '⭐' : iconController.text,
           );
@@ -75,46 +67,16 @@ class SkillDialogUtils {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: TextField(
-                        controller: iconController,
-                        textInputAction: TextInputAction.next,
-                        onSubmitted: (_) => submitSkill(),
-                        decoration: const InputDecoration(
-                          labelText: 'Emoji',
-                          border: OutlineInputBorder(),
-                          hintText: '💪',
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      flex: 5,
-                      child: TextField(
-                        controller: categoryController,
-                        textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => submitSkill(),
-                        decoration: const InputDecoration(
-                          labelText: 'Category',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text('Hardability (Difficulty)'),
-                Slider(
-                  value: difficulty,
-                  min: 1.0,
-                  max: 5.0,
-                  divisions: 4,
-                  label: 'x${difficulty.toInt()}',
-                  onChanged: (val) => setDialogState(() => difficulty = val),
+                TextField(
+                  controller: iconController,
+                  textInputAction: TextInputAction.next,
+                  onSubmitted: (_) => submitSkill(),
+                  decoration: const InputDecoration(
+                    labelText: 'Emoji (Optional)',
+                    border: OutlineInputBorder(),
+                    hintText: '💪',
+                  ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 if (!isEditing) ...[

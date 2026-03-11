@@ -74,7 +74,12 @@ class SettingsScreen extends StatelessWidget {
                       vertical: 8,
                     ),
                   ),
-                  initialValue: appState.defaultSkillId,
+                  initialValue: (appState.defaultSkillId == null ||
+                          appState.defaultSkillId == 'none' ||
+                          appState.skills
+                              .any((s) => s.id == appState.defaultSkillId))
+                      ? appState.defaultSkillId
+                      : null,
                   items: [
                     const DropdownMenuItem(value: null, child: Text('None')),
                     const DropdownMenuItem(
@@ -116,7 +121,6 @@ class SettingsScreen extends StatelessWidget {
                     style: const TextStyle(fontSize: 20),
                   ),
                   title: Text(skill.name),
-                  subtitle: Text(skill.category),
                   trailing: IconButton(
                     icon: const Icon(Icons.edit_outlined, size: 20),
                     onPressed: () =>
@@ -125,9 +129,96 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ]),
+            const SizedBox(height: 24),
+            
+            // Account Management Box
+            _buildSectionCard(context, 'Account Management', [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(
+                  Icons.restart_alt_rounded,
+                  color: Colors.orange,
+                ),
+                title: const Text('Reset Account'),
+                onTap: () => _showResetConfirmDialog(context, appState),
+              ),
+              const Divider(height: 32),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(
+                  Icons.delete_forever_rounded,
+                  color: Colors.red,
+                ),
+                title: const Text('Delete Account', style: TextStyle(color: Colors.red)),
+                onTap: () => _showDeleteConfirmDialog(context, appState),
+              ),
+            ]),
             SizedBox(height: 120 + MediaQuery.of(context).padding.bottom), // Added clearance for tap bar
           ],
         ),
+      ),
+    );
+  }
+
+  void _showResetConfirmDialog(BuildContext context, AppState appState) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Account?'),
+        content: const Text(
+          'This will delete your character data and tasks so you can test the onboarding flow again. You will not be signed out.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.tonal(
+            onPressed: () async {
+              Navigator.pop(context);
+              await appState.resetAccount();
+            },
+            child: const Text('Reset Data'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmDialog(BuildContext context, AppState appState) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account?'),
+        content: const Text(
+          'Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Close settings screen
+              try {
+                await appState.deleteAccount();
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete account: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Delete Forever'),
+          ),
+        ],
       ),
     );
   }

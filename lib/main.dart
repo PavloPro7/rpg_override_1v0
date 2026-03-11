@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'providers/app_state.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -77,7 +78,11 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: appState.isAuthenticated ? const HomeScreen() : const LoginScreen(),
+      home: appState.isAuthenticated 
+        ? (appState.isProfileLoaded 
+            ? (appState.isOnboarded ? const HomeScreen() : const OnboardingScreen())
+            : const Scaffold(body: Center(child: CircularProgressIndicator())))
+        : const LoginScreen(),
     );
   }
 }

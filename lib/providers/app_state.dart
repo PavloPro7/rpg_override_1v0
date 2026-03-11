@@ -28,14 +28,18 @@ class AppState extends ChangeNotifier {
   bool _staySignedIn = true;
   String? _defaultSkillId;
 
+  bool _isProfileLoaded = false;
+
   AppState() {
     _loadPreferences();
     _skills = _initialSkills();
     _auth.authStateChanges().listen((user) {
       _user = user;
       if (user != null) {
+        _isProfileLoaded = false;
         _loadFromFirestore();
       } else {
+        _isProfileLoaded = false;
         _skills = _initialSkills();
         _tasks = [];
         _userName = null;
@@ -47,44 +51,7 @@ class AppState extends ChangeNotifier {
     });
   }
 
-  List<Skill> _initialSkills() => [
-    Skill(
-      id: 'english',
-      name: 'English',
-      category: 'Language',
-      color: Colors.blueAccent,
-      icon: '🇺🇸',
-      difficulty: 4.0,
-      xp: 1200.0, // (Level 4 - 1) * (100 * Difficulty 4)
-    ),
-    Skill(
-      id: 'education',
-      name: 'Education',
-      category: 'Career',
-      color: Colors.redAccent,
-      icon: '🎒',
-      difficulty: 4.0,
-      xp: 1200.0,
-    ),
-    Skill(
-      id: 'strength',
-      name: 'Strengh',
-      category: 'Fitness',
-      color: Colors.orangeAccent,
-      icon: '💪',
-      difficulty: 4.0,
-      xp: 1200.0,
-    ),
-    Skill(
-      id: 'german',
-      name: 'German',
-      category: 'Language',
-      color: Colors.blueAccent,
-      icon: '🇩🇪',
-      difficulty: 4.0,
-      xp: 1200.0,
-    ),
-  ];
+  List<Skill> _initialSkills() => [];
 
   List<Skill> get skills => _skills;
   List<Task> get tasks => _tasks;
@@ -136,6 +103,8 @@ class AppState extends ChangeNotifier {
   bool get isAuthenticated => _user != null;
   bool get isEmailVerified => _user?.emailVerified ?? false;
   bool get isAnonymous => _user?.isAnonymous ?? false;
+  bool get isProfileLoaded => _isProfileLoaded;
+  bool get isOnboarded => (_userName != null && _userName!.isNotEmpty && _userName != 'Hero') && (_userAge != null && _userAge! > 0);
 
   Future<void> reloadUser() async {
     await _user?.reload();
@@ -187,9 +156,6 @@ class AppState extends ChangeNotifier {
   Future<String?> signUp(
     String email,
     String password,
-    String name,
-    int age,
-    String? avatarUrl,
   ) async {
     _isSigningUp = true;
     try {
@@ -200,16 +166,15 @@ class AppState extends ChangeNotifier {
 
       if (credential.user != null) {
         await credential.user!.sendEmailVerification();
-        await credential.user!.updateDisplayName(name);
+        await credential.user!.updateDisplayName('Hero');
         await _firestore.collection('users').doc(credential.user!.uid).set({
-          'name': name,
-          'age': age,
-          'avatarUrl': avatarUrl,
+          'name': 'Hero',
+          'age': 0,
           'createdAt': FieldValue.serverTimestamp(),
         });
-        _userName = name;
-        _userAge = age;
-        _avatarUrl = avatarUrl;
+        _userName = 'Hero';
+        _userAge = 0;
+        _isProfileLoaded = true;
         notifyListeners();
       }
       await _savePreferences();
@@ -317,6 +282,65 @@ class AppState extends ChangeNotifier {
         return null; // Cancelled
       }
       return e.toString();
+    }
+  }
+
+  // Account Management Methods
+
+  Future<void> resetAccount() async {
+    if (_user == null) return;
+    try {
+      final userDoc = _firestore.collection('users').doc(_user!.uid);
+      
+      // Delete tasks collection
+      final tasks = await userDoc.collection('tasks').get();
+      for (final doc in tasks.docs) {
+        await doc.reference.delete();
+      }
+      
+      // Update user doc back to pre-onboarding defaults
+      await userDoc.set({
+        'name': 'Hero',
+        'age': 0,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      _userName = 'Hero';
+      _userAge = 0;
+      _tasks = [];
+      _skills = _initialSkills();
+      await _savePreferences();
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error resetting account: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    if (_user == null) return;
+    try {
+      final userDoc = _firestore.collection('users').doc(_user!.uid);
+      
+      // Delete tasks collection
+      final tasks = await userDoc.collection('tasks').get();
+      for (final doc in tasks.docs) {
+        await doc.reference.delete();
+      }
+      
+      // Delete user document
+      await userDoc.delete();
+      
+      // Attempt auth account deletion
+      final currentUser = _user; // save ref before signOut clears it
+      await signOut(); // This clears local state
+      
+      // Firebase auth deletion requires recent authentication. 
+      // This may throw a 'requires-recent-login' exception if the session is too old.
+      await currentUser?.delete(); 
+    } catch (e) {
+      debugPrint('Error deleting account: $e');
+      rethrow;
     }
   }
 
@@ -446,6 +470,7 @@ class AppState extends ChangeNotifier {
     final tasksSnapshot = await userDoc.collection('tasks').get();
     _tasks = tasksSnapshot.docs.map((doc) => Task.fromMap(doc.data())).toList();
 
+    _isProfileLoaded = true;
     notifyListeners();
   }
 
@@ -555,9 +580,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> addSkill(
     String name,
-    String category,
     Color color,
-    double difficulty,
     int startLevel,
     String icon,
   ) async {
@@ -565,10 +588,8 @@ class AppState extends ChangeNotifier {
     final newSkill = Skill(
       id: name.toLowerCase().replaceAll(' ', '_'),
       name: name,
-      category: category,
       color: color,
-      difficulty: difficulty,
-      xp: (startLevel - 1) * (100 * difficulty),
+      xp: (startLevel - 1) * 100.0,
       icon: icon,
     );
 

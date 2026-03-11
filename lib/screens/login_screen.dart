@@ -14,8 +14,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
   bool _isLogin = true;
   bool _isLoading = false;
   bool _showPassword = false;
@@ -32,17 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (!_isLogin) {
-      if (password != _confirmPasswordController.text.trim()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Passwords do not match"),
-            backgroundColor: Colors.orangeAccent,
-          ),
-        );
-        return;
-      }
-    }
+  // Removed confirm password check from here as it's now handled below.
 
     setState(() => _isLoading = true);
     final messenger = ScaffoldMessenger.of(context);
@@ -52,14 +40,16 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_isLogin) {
       error = await appState.signIn(email, password);
     } else {
-      final name = _nameController.text.trim();
-      final age = int.tryParse(_ageController.text.trim()) ?? 0;
-
-      if (name.isEmpty || age <= 0) {
-        error = "Please enter a valid name and age";
-      } else {
-        error = await appState.signUp(email, password, name, age, null);
+      if (password != _confirmPasswordController.text.trim()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Passwords do not match"),
+            backgroundColor: Colors.orangeAccent,
+          ),
+        );
+        return;
       }
+      error = await appState.signUp(email, password);
     }
 
     if (mounted && error != null) {
@@ -303,20 +293,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                     !_showConfirmPassword,
                               ),
                               autofillHints: [AutofillHints.newPassword],
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _nameController,
-                              label: 'Hero Name',
-                              icon: Icons.badge_outlined,
-                              autofillHints: [AutofillHints.name],
-                            ),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _ageController,
-                              label: 'Age',
-                              icon: Icons.cake_outlined,
-                              keyboardType: TextInputType.number,
                               textInputAction: TextInputAction.done,
                               onSubmitted: (_) => _submit(),
                             ),

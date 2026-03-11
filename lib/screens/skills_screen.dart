@@ -182,15 +182,6 @@ class SkillCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Text(
-                        skill.category.toUpperCase(),
-                        style: TextStyle(
-                          color: colorScheme.onSurfaceVariant,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
                     ],
                   ),
                 ),
