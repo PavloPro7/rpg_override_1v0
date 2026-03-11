@@ -92,20 +92,6 @@ class SkillsScreen extends StatelessWidget {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.dashboard),
-                title: const Text('Go to Dashboard'),
-                onTap: () {
-                  Navigator.pop(context); // Close bottom sheet
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Navigating to ${skill.name} dashboard (Not implemented yet)',
-                      ),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
                 leading: const Icon(Icons.delete_forever, color: Colors.red),
                 title: const Text(
                   'Delete Skill',
