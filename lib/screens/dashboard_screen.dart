@@ -99,12 +99,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      SizedBox(
-                        height: 250,
-                        child: RadarChart(
-                          skills: appState.skills,
-                          maxValue: 10,
-                        ),
+                      Builder(
+                        builder: (context) {
+                          double maxLevel = 10.0;
+                          if (appState.skills.isNotEmpty) {
+                            final highestSkill = appState.skills.reduce(
+                              (curr, next) => curr.level > next.level ? curr : next,
+                            );
+                            // Set max to highest level + 20% buffer, but at least 10
+                            maxLevel = (highestSkill.level.toDouble() * 1.2).clamp(10.0, double.infinity);
+                          }
+                          
+                          return SizedBox(
+                            height: 250,
+                            child: RadarChart(
+                              skills: appState.skills,
+                              maxValue: maxLevel,
+                            ),
+                          );
+                        }
                       ),
                     ],
                   ),
