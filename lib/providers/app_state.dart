@@ -231,6 +231,9 @@ class AppState extends ChangeNotifier {
       TextInput.finishAutofillContext();
       return null;
     } on FirebaseAuthException catch (e) {
+      if (e.code == 'invalid-credential' || e.code == 'wrong-password' || e.code == 'user-not-found') {
+        return 'Password or email incorrect';
+      }
       return e.message;
     }
   }

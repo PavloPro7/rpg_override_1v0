@@ -64,7 +64,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (mounted && error != null) {
       messenger.showSnackBar(
-        SnackBar(content: Text(error), backgroundColor: Colors.redAccent),
+        SnackBar(
+          content: Text(error), 
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.only(
+            left: 16, 
+            right: 16, 
+            bottom: 16 + MediaQuery.of(context).padding.bottom,
+          ),
+          duration: Duration(seconds: error.length > 50 ? 5 : 3),
+        ),
       );
     }
     if (mounted) setState(() => _isLoading = false);
@@ -478,6 +488,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                         SnackBar(
                                           content: Text(error),
                                           backgroundColor: Colors.redAccent,
+                                          behavior: SnackBarBehavior.floating,
+                                          margin: EdgeInsets.only(
+                                            left: 16, 
+                                            right: 16, 
+                                            bottom: 16 + MediaQuery.of(context).padding.bottom,
+                                          ),
                                         ),
                                       );
                                     }
@@ -508,6 +524,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                         SnackBar(
                                           content: Text(error),
                                           backgroundColor: Colors.redAccent,
+                                          behavior: SnackBarBehavior.floating,
+                                          margin: EdgeInsets.only(
+                                            left: 16, 
+                                            right: 16, 
+                                            bottom: 16 + MediaQuery.of(context).padding.bottom,
+                                          ),
                                         ),
                                       );
                                     }
@@ -538,6 +560,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                           SnackBar(
                                             content: Text(error),
                                             backgroundColor: Colors.redAccent,
+                                            behavior: SnackBarBehavior.floating,
+                                            margin: EdgeInsets.only(
+                                              left: 16, 
+                                              right: 16, 
+                                              bottom: 16 + MediaQuery.of(context).padding.bottom,
+                                            ),
+                                            duration: Duration(seconds: error.length > 50 ? 5 : 3),
                                           ),
                                         );
                                       }
