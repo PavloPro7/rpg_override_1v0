@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../models/skill.dart';
@@ -116,6 +118,154 @@ class SkillsScreen extends StatelessWidget {
   }
 }
 
+void _showRecentTasksBottomSheet(BuildContext context, Skill skill) {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return;
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      return DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (context, scrollController) {
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(skill.icon, style: const TextStyle(fontSize: 24)),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Recent ${skill.name} Quests',
+                      style: const TextStyle(
+                        fontSize: 20, 
+                        fontWeight: FontWeight.bold
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 32),
+                Expanded(
+                  child: FutureBuilder<QuerySnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(user.uid)
+                        .collection('tasks')
+                        .where('skillId', isEqualTo: skill.id)
+                        .where('isCompleted', isEqualTo: true)
+                        .get()
+                        .then((QuerySnapshot snapshot) {
+                      // We sort locally to avoid needing a Firebase Composite Index
+                      final docs = snapshot.docs.toList();
+                      docs.sort((a, b) {
+                        try {
+                          final dataA = a.data() as Map<String, dynamic>;
+                          final dataB = b.data() as Map<String, dynamic>;
+                          final dateA = DateTime.parse(dataA['date']);
+                          final dateB = DateTime.parse(dataB['date']);
+                          return dateB.compareTo(dateA); // Descending
+                        } catch (e) {
+                          return 0;
+                        }
+                      });
+
+                      // Apply limit locally
+                      if (docs.length > 10) {
+                        docs.removeRange(10, docs.length);
+                      }
+                      
+                      // Return a constructed snapshot-like list wrapper for simplicity in builder
+                      return snapshot;
+                    }),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Text(
+                            'Error loading tasks: ${snapshot.error}',
+                            style: const TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      }
+                      
+                      // Grab the globally sorted docs we cached from the future or fallback to original snapshot
+                      List<QueryDocumentSnapshot> sortedDocs = [];
+                      if (snapshot.hasData) {
+                          sortedDocs = snapshot.data!.docs.toList();
+                          sortedDocs.sort((a, b) {
+                              try {
+                                final dataA = a.data() as Map<String, dynamic>;
+                                final dataB = b.data() as Map<String, dynamic>;
+                                final dateA = DateTime.parse(dataA['date']);
+                                final dateB = DateTime.parse(dataB['date']);
+                                return dateB.compareTo(dateA); // Descending
+                              } catch (e) {
+                                return 0;
+                              }
+                            });
+                            
+                            if (sortedDocs.length > 10) {
+                                sortedDocs = sortedDocs.sublist(0, 10);
+                            }
+                      }
+                      
+                      if (!snapshot.hasData || sortedDocs.isEmpty) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(24.0),
+                            child: Text(
+                              'No tasks completed for this skill yet. Time to get to work! 💪',
+                              style: TextStyle(
+                                fontSize: 16, 
+                                color: Colors.grey
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ListView.builder(
+                        controller: scrollController,
+                        itemCount: sortedDocs.length,
+                        itemBuilder: (context, index) {
+                          final data = sortedDocs[index].data() as Map<String, dynamic>;
+                          final title = data['title'] ?? 'Unnamed Task';
+                          
+                          return ListTile(
+                            leading: const Icon(
+                                Icons.check_circle, 
+                                color: Colors.green
+                            ),
+                            title: Text(title),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
 class SkillCard extends StatelessWidget {
   final Skill skill;
 
@@ -125,25 +275,28 @@ class SkillCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      elevation: 2,
-      shadowColor: colorScheme.onSurface.withValues(alpha: 0.05),
-      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+    return InkWell(
+      borderRadius: BorderRadius.circular(28),
+      onTap: () => _showRecentTasksBottomSheet(context, skill),
+      child: Card(
+        elevation: 2,
+        shadowColor: colorScheme.onSurface.withValues(alpha: 0.05),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        margin: const EdgeInsets.only(bottom: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,6 +376,7 @@ class SkillCard extends StatelessWidget {
               ],
             ),
           ],
+        ),
         ),
       ),
     );
