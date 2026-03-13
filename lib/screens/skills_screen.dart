@@ -7,9 +7,16 @@ import '../models/skill.dart';
 import '../utils/skill_dialog_utils.dart';
 import 'settings_screen.dart';
 
-class SkillsScreen extends StatelessWidget {
+class SkillsScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
   const SkillsScreen({super.key, this.onProfileTap});
+
+  @override
+  State<SkillsScreen> createState() => _SkillsScreenState();
+}
+
+class _SkillsScreenState extends State<SkillsScreen> {
+  Skill? selectedSkill;
 
   @override
   Widget build(BuildContext context) {
@@ -17,44 +24,87 @@ class SkillsScreen extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Character Skills'),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.settings),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const SettingsScreen()),
-          ),
-        ),
-        actions: [
-          IconButton.filledTonal(
-            icon: const Icon(Icons.library_add_rounded),
-            onPressed: () => SkillDialogUtils.showSkillDialog(context),
-          ),
-          const SizedBox(width: 8),
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: InkWell(
-              onTap: onProfileTap,
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: colorScheme.primaryContainer,
-                backgroundImage: appState.avatarUrl != null
-                    ? NetworkImage(appState.avatarUrl!)
-                    : null,
-                child: appState.avatarUrl == null
-                    ? Icon(
-                        Icons.person_rounded,
-                        size: 20,
-                        color: colorScheme.onPrimaryContainer,
-                      )
-                    : null,
+      appBar: selectedSkill != null
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    selectedSkill = null;
+                  });
+                },
               ),
+              title: const Text('1'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () {
+                    final skillToEdit = selectedSkill!;
+                    setState(() {
+                      selectedSkill = null;
+                    });
+                    SkillDialogUtils.showSkillDialog(
+                      context,
+                      skill: skillToEdit,
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_forever, color: Colors.red),
+                  onPressed: () {
+                    final skillToDelete = selectedSkill!;
+                    setState(() {
+                      selectedSkill = null;
+                    });
+                    Provider.of<AppState>(
+                      context,
+                      listen: false,
+                    ).removeSkill(skillToDelete.id);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${skillToDelete.name} deleted')),
+                    );
+                  },
+                ),
+              ],
+            )
+          : AppBar(
+              title: const Text('Character Skills'),
+              centerTitle: true,
+              leading: IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                ),
+              ),
+              actions: [
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.library_add_rounded),
+                  onPressed: () => SkillDialogUtils.showSkillDialog(context),
+                ),
+                const SizedBox(width: 8),
+                Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: InkWell(
+                    onTap: widget.onProfileTap,
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor: colorScheme.primaryContainer,
+                      backgroundImage: appState.avatarUrl != null
+                          ? NetworkImage(appState.avatarUrl!)
+                          : null,
+                      child: appState.avatarUrl == null
+                          ? Icon(
+                              Icons.person_rounded,
+                              size: 20,
+                              color: colorScheme.onPrimaryContainer,
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
       body: ListView.builder(
         padding: EdgeInsets.only(
           left: 16,
@@ -65,55 +115,30 @@ class SkillsScreen extends StatelessWidget {
         itemCount: appState.skills.length,
         itemBuilder: (context, index) {
           final skill = appState.skills[index];
-          return GestureDetector(
-            onLongPress: () => _showSkillOptionsBottomSheet(context, skill),
-            child: SkillCard(skill: skill),
+          final isSelected = selectedSkill?.id == skill.id;
+
+          return SkillCard(
+            skill: skill,
+            isSelected: isSelected,
+            onLongPress: () {
+              setState(() {
+                selectedSkill = skill;
+              });
+            },
+            onTap: () {
+              if (selectedSkill != null) {
+                // Toggle selection if in selection mode
+                setState(() {
+                  selectedSkill = isSelected ? null : skill;
+                });
+              } else {
+                // Show recent tasks
+                _showRecentTasksBottomSheet(context, skill);
+              }
+            },
           );
         },
       ),
-    );
-  }
-
-  void _showSkillOptionsBottomSheet(BuildContext context, Skill skill) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.edit),
-                title: const Text('Edit Skill'),
-                onTap: () {
-                  Navigator.pop(context); // Close bottom sheet
-                  SkillDialogUtils.showSkillDialog(
-                    context,
-                    skill: skill,
-                  ); // Open edit dialog
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete_forever, color: Colors.red),
-                title: const Text(
-                  'Delete Skill',
-                  style: TextStyle(color: Colors.red),
-                ),
-                onTap: () {
-                  Navigator.pop(context); // Close bottom sheet
-                  Provider.of<AppState>(
-                    context,
-                    listen: false,
-                  ).removeSkill(skill.id);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${skill.name} deleted')),
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }
@@ -268,8 +293,17 @@ void _showRecentTasksBottomSheet(BuildContext context, Skill skill) {
 
 class SkillCard extends StatelessWidget {
   final Skill skill;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
-  const SkillCard({super.key, required this.skill});
+  const SkillCard({
+    super.key, 
+    required this.skill,
+    required this.isSelected,
+    required this.onTap,
+    required this.onLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -277,16 +311,22 @@ class SkillCard extends StatelessWidget {
 
     return InkWell(
       borderRadius: BorderRadius.circular(28),
-      onTap: () => _showRecentTasksBottomSheet(context, skill),
+      onTap: onTap,
+      onLongPress: onLongPress,
       child: Card(
-        elevation: 2,
+        elevation: isSelected ? 8 : 2,
         shadowColor: colorScheme.onSurface.withValues(alpha: 0.05),
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: isSelected 
+            ? colorScheme.primaryContainer 
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         margin: const EdgeInsets.only(bottom: 12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(28),
           side: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+            color: isSelected 
+                ? colorScheme.primary 
+                : colorScheme.outlineVariant.withValues(alpha: 0.5),
+            width: isSelected ? 2 : 1,
           ),
         ),
         child: Padding(
