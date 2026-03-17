@@ -229,7 +229,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     alpha: 0.5,
                   ),
                   child: Column(
-                    children: appState.tasks.reversed.take(5).map((task) {
+                    children: (appState.tasks.toList()
+                      ..sort((a, b) => (b.updatedAt ?? b.date)
+                          .compareTo(a.updatedAt ?? a.date)))
+                      .take(5)
+                      .map((task) {
                       final isGeneral = task.skillId == 'none';
                       final skill = isGeneral
                           ? null

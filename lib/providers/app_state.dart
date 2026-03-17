@@ -491,6 +491,7 @@ class AppState extends ChangeNotifier {
       difficulty: difficulty,
       isStarred: false,
       isPinned: false,
+      updatedAt: DateTime.now(),
     );
     _tasks.add(newTask);
     notifyListeners();
@@ -528,6 +529,7 @@ class AppState extends ChangeNotifier {
       isStarred: existingTask.isStarred,
       isPinned: existingTask.isPinned,
       completedDates: existingTask.completedDates,
+      updatedAt: DateTime.now(),
     );
 
     _tasks[taskIndex] = updatedTask;
@@ -566,7 +568,8 @@ class AppState extends ChangeNotifier {
     final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
     if (taskIndex != -1) {
       final normalizedDate = DateUtils.dateOnly(newDate);
-      _tasks[taskIndex] = _tasks[taskIndex].copyWith(date: normalizedDate);
+      final now = DateTime.now();
+      _tasks[taskIndex] = _tasks[taskIndex].copyWith(date: normalizedDate, updatedAt: now);
       notifyListeners();
 
       await _firestore
@@ -574,7 +577,7 @@ class AppState extends ChangeNotifier {
           .doc(_user!.uid)
           .collection('tasks')
           .doc(taskId)
-          .update({'date': normalizedDate.toIso8601String()});
+          .update({'date': normalizedDate.toIso8601String(), 'updatedAt': now.toIso8601String()});
     }
   }
 
@@ -640,6 +643,8 @@ class AppState extends ChangeNotifier {
     final date = onDate ?? DateTime.now();
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
 
+    final now = DateTime.now();
+
     // Skip XP logic for general tasks
     if (task.skillId == 'none') {
       if (task.isPinned) {
@@ -654,7 +659,7 @@ class AppState extends ChangeNotifier {
             .doc(_user!.uid)
             .collection('tasks')
             .doc(taskId)
-            .update({'completedDates': task.completedDates});
+            .update({'completedDates': task.completedDates, 'updatedAt': now.toIso8601String()});
       } else {
         task.isCompleted = !task.isCompleted;
         await _firestore
@@ -662,7 +667,7 @@ class AppState extends ChangeNotifier {
             .doc(_user!.uid)
             .collection('tasks')
             .doc(taskId)
-            .update({'isCompleted': task.isCompleted});
+            .update({'isCompleted': task.isCompleted, 'updatedAt': now.toIso8601String()});
         notifyListeners();
       }
       return;
@@ -693,7 +698,7 @@ class AppState extends ChangeNotifier {
           .doc(_user!.uid)
           .collection('tasks')
           .doc(taskId)
-          .update({'completedDates': task.completedDates});
+          .update({'completedDates': task.completedDates, 'updatedAt': now.toIso8601String()});
 
       if (skillIndex != -1) {
         await _firestore
@@ -728,7 +733,7 @@ class AppState extends ChangeNotifier {
           .doc(_user!.uid)
           .collection('tasks')
           .doc(taskId)
-          .update({'isCompleted': task.isCompleted});
+          .update({'isCompleted': task.isCompleted, 'updatedAt': now.toIso8601String()});
 
       notifyListeners();
     }
@@ -739,6 +744,8 @@ class AppState extends ChangeNotifier {
     final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
     if (taskIndex != -1) {
       _tasks[taskIndex].isPinned = !_tasks[taskIndex].isPinned;
+      final now = DateTime.now();
+      _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
       notifyListeners();
 
       await _firestore
@@ -746,7 +753,7 @@ class AppState extends ChangeNotifier {
           .doc(_user!.uid)
           .collection('tasks')
           .doc(taskId)
-          .update({'isPinned': _tasks[taskIndex].isPinned});
+          .update({'isPinned': _tasks[taskIndex].isPinned, 'updatedAt': now.toIso8601String()});
     }
   }
 
@@ -776,6 +783,8 @@ class AppState extends ChangeNotifier {
     final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
     if (taskIndex != -1) {
       _tasks[taskIndex].isStarred = !_tasks[taskIndex].isStarred;
+      final now = DateTime.now();
+      _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
       notifyListeners();
 
       await _firestore
@@ -783,7 +792,7 @@ class AppState extends ChangeNotifier {
           .doc(_user!.uid)
           .collection('tasks')
           .doc(taskId)
-          .update({'isStarred': _tasks[taskIndex].isStarred});
+          .update({'isStarred': _tasks[taskIndex].isStarred, 'updatedAt': now.toIso8601String()});
     }
   }
 

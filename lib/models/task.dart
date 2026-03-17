@@ -9,6 +9,7 @@ class Task {
   bool isPinned;
   List<String> completedDates;
   final int difficulty;
+  final DateTime? updatedAt;
 
   Task({
     required this.id,
@@ -21,6 +22,7 @@ class Task {
     this.isPinned = false,
     this.completedDates = const [],
     this.difficulty = 1,
+    this.updatedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -35,6 +37,7 @@ class Task {
       'isPinned': isPinned,
       'completedDates': completedDates,
       'difficulty': difficulty,
+      'updatedAt': updatedAt?.toIso8601String(),
     };
   }
 
@@ -50,6 +53,7 @@ class Task {
       isPinned: map['isPinned'] ?? false,
       completedDates: List<String>.from(map['completedDates'] ?? []),
       difficulty: map['difficulty'] ?? 1,
+      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
     );
   }
 
@@ -64,6 +68,7 @@ class Task {
     bool? isPinned,
     List<String>? completedDates,
     int? difficulty,
+    DateTime? updatedAt,
   }) {
     return Task(
       id: id ?? this.id,
@@ -76,6 +81,7 @@ class Task {
       isPinned: isPinned ?? this.isPinned,
       completedDates: completedDates ?? this.completedDates,
       difficulty: difficulty ?? this.difficulty,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }
