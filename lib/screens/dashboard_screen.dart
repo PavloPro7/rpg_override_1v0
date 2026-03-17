@@ -247,6 +247,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       final skillName = skill?.name ?? 'General Quest';
 
                       return ListTile(
+                        onTap: widget.onDateSelected != null
+                            ? () => widget.onDateSelected!(task.date)
+                            : null,
                         leading: Icon(
                           task.isCompleted
                               ? Icons.check_circle

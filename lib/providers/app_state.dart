@@ -145,8 +145,8 @@ class AppState extends ChangeNotifier {
   List<Task> getTasksForDate(DateTime date) {
     return _tasks.where((t) {
       if (t.isPinned) {
-        // Only show pinned tasks on or after their assigned date
-        return date.isAfter(t.date) || DateUtils.isSameDay(date, t.date);
+        final endDate = t.date.add(const Duration(days: 35));
+        return !date.isBefore(t.date) && !date.isAfter(endDate);
       }
       return DateUtils.isSameDay(t.date, date);
     }).toList();
@@ -742,19 +742,50 @@ class AppState extends ChangeNotifier {
   Future<void> togglePin(String taskId) async {
     if (_user == null) return;
     final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
-    if (taskIndex != -1) {
-      _tasks[taskIndex].isPinned = !_tasks[taskIndex].isPinned;
-      final now = DateTime.now();
-      _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
-      notifyListeners();
+    if (taskIndex == -1) return;
+    final now = DateTime.now();
+    final today = DateUtils.dateOnly(now);
+    final wasUnpinned = !_tasks[taskIndex].isPinned;
+    _tasks[taskIndex] = _tasks[taskIndex].copyWith(
+      isPinned: wasUnpinned,
+      date: wasUnpinned ? today : _tasks[taskIndex].date,
+      updatedAt: now,
+    );
+    notifyListeners();
+    await _firestore
+        .collection('users')
+        .doc(_user!.uid)
+        .collection('tasks')
+        .doc(taskId)
+        .update({
+          'isPinned': _tasks[taskIndex].isPinned,
+          'date': _tasks[taskIndex].date.toIso8601String(),
+          'updatedAt': now.toIso8601String(),
+        });
+  }
 
-      await _firestore
-          .collection('users')
-          .doc(_user!.uid)
-          .collection('tasks')
-          .doc(taskId)
-          .update({'isPinned': _tasks[taskIndex].isPinned, 'updatedAt': now.toIso8601String()});
-    }
+  Future<void> unpinKeepToday(String taskId) async {
+    if (_user == null) return;
+    final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
+    if (taskIndex == -1) return;
+    final now = DateTime.now();
+    final today = DateUtils.dateOnly(now);
+    _tasks[taskIndex] = _tasks[taskIndex].copyWith(
+      isPinned: false,
+      date: today,
+      updatedAt: now,
+    );
+    notifyListeners();
+    await _firestore
+        .collection('users')
+        .doc(_user!.uid)
+        .collection('tasks')
+        .doc(taskId)
+        .update({
+          'isPinned': false,
+          'date': today.toIso8601String(),
+          'updatedAt': now.toIso8601String(),
+        });
   }
 
   Future<void> togglePinTasks(List<String> taskIds, bool pinned) async {

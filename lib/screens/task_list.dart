@@ -705,7 +705,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                             ),
                             onPressed: _isSelectionMode
                                 ? null
-                                : () => appState.togglePin(task.id),
+                                : () => _showUnpinDialog(context, task),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             tooltip: 'Unpin task',
@@ -791,6 +791,38 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showUnpinDialog(BuildContext context, Task task) {
+    final appState = context.read<AppState>();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Pinned Task'),
+        content: const Text('What do you want to do with this task?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              appState.unpinKeepToday(task.id);
+            },
+            child: const Text('Unpin (keep today)'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () {
+              Navigator.pop(ctx);
+              appState.deleteTasks([task.id]);
+            },
+            child: const Text('Delete entirely'),
+          ),
+        ],
       ),
     );
   }
