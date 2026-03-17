@@ -7,12 +7,25 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:150219738865:android:68d1005f2a137d6bafe350",
+        "mobilesdk_app_id": "1:150219738865:android:4067bd4dc0d98f75afe350",
         "android_client_info": {
-          "package_name": "com.example.rpg_override_1v0"
+          "package_name": "com.example.rpgoverride"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "150219738865-fa8t9aaav4a7kqel5t7al6cmgbea5nd0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.rpgoverride",
+            "certificate_hash": "46264ac0d239bb52107eebb47046c52ca2e5bfa8"
+          }
+        },
+        {
+          "client_id": "150219738865-manrlsp935foo0d1bitp10p5ochesrjt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCS5kqHST5E4vv2Xq61Ksr_4fiz4sthlec"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "150219738865-manrlsp935foo0d1bitp10p5ochesrjt.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "150219738865-e6nfgbm4ftcfnlurg1komhqq5fi86n3k.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.rpg-override-1v0"
+              }
+            }
+          ]
         }
       }
     }
