@@ -623,10 +623,68 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                       alignment: Alignment.center,
                       clipBehavior: Clip.none,
                       children: [
+                        Opacity(
+                          opacity: (_animatingTaskIds.contains(task.id) && !isDone)
+                              ? 0.0
+                              : 1.0,
+                          child: IconButton(
+                            icon: Icon(
+                              isDone
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_unchecked,
+                              color: isDone ? Colors.green : skillColor,
+                              size: 28,
+                            ),
+                            onPressed: _isSelectionMode
+                              ? null
+                              : () async {
+                                  if (!isDone) {
+                                    setState(
+                                      () => _animatingTaskIds.add(task.id),
+                                    );
+                                    // Wait for burst to happen a bit before fading
+                                    await Future.delayed(
+                                      const Duration(milliseconds: 350),
+                                    );
+                                    if (mounted) {
+                                      setState(
+                                        () => _fadingTaskIds.add(task.id),
+                                      );
+                                    }
+                                    await Future.delayed(
+                                      const Duration(milliseconds: 400),
+                                    );
+                                  }
+                                  if (mounted) {
+                                    appState.completeTask(
+                                      task.id,
+                                      onDate: pageDate,
+                                    );
+                                    // Clear animation state after the
+                                    // current frame renders so the task
+                                    // has already left activeTasks before
+                                    // AnimatedSize/AnimatedOpacity can
+                                    // reverse and cause a visible jump.
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      if (mounted) {
+                                        setState(() {
+                                          _animatingTaskIds.remove(task.id);
+                                          _fadingTaskIds.remove(task.id);
+                                        });
+                                      }
+                                    });
+                                  }
+                                },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ),
                         if (_animatingTaskIds.contains(task.id) && !isDone)
-                          Positioned(
-                            child: Transform.translate(
-                              offset: const Offset(-24, 0),
+                          Positioned.fill(
+                            child: OverflowBox(
+                              maxWidth: 60,
+                              maxHeight: 60,
                               child: const SizedBox(
                                 width: 60,
                                 height: 60,
@@ -634,71 +692,6 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                               ),
                             ),
                           ),
-                        Opacity(
-                          opacity:
-                              (_animatingTaskIds.contains(task.id) && !isDone)
-                              ? 0.0
-                              : 1.0,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: Icon(
-                                  isDone
-                                      ? Icons.check_circle
-                                      : Icons.radio_button_unchecked,
-                                  color: isDone ? Colors.green : skillColor,
-                                  size: 28,
-                                ),
-                                onPressed: _isSelectionMode
-                                    ? null
-                                    : () async {
-                                        if (!isDone) {
-                                          setState(
-                                            () =>
-                                                _animatingTaskIds.add(task.id),
-                                          );
-                                          // Wait for burst to happen a bit before fading
-                                          await Future.delayed(
-                                            const Duration(milliseconds: 350),
-                                          );
-                                          if (mounted) {
-                                            setState(
-                                              () => _fadingTaskIds.add(task.id),
-                                            );
-                                          }
-                                          await Future.delayed(
-                                            const Duration(milliseconds: 400),
-                                          );
-                                        }
-                                        if (mounted) {
-                                          appState.completeTask(
-                                            task.id,
-                                            onDate: pageDate,
-                                          );
-                                          // Clear animation state after the
-                                          // current frame renders so the task
-                                          // has already left activeTasks before
-                                          // AnimatedSize/AnimatedOpacity can
-                                          // reverse and cause a visible jump.
-                                          WidgetsBinding.instance
-                                              .addPostFrameCallback((_) {
-                                            if (mounted) {
-                                              setState(() {
-                                                _animatingTaskIds
-                                                    .remove(task.id);
-                                                _fadingTaskIds.remove(task.id);
-                                              });
-                                            }
-                                          });
-                                        }
-                                      },
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
                     ),
                     title: Row(
