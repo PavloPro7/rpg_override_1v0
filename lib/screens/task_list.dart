@@ -165,6 +165,11 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
               ),
               actions: [
                 IconButton(
+                  icon: const Icon(Icons.swap_horiz, color: Colors.white),
+                  onPressed: () => _showMoveMultipleTasksDialog(context),
+                  tooltip: 'Move selected',
+                ),
+                IconButton(
                   icon: const Icon(
                     Icons.push_pin_outlined,
                     color: Colors.white,
@@ -578,6 +583,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
         : task.isCompleted;
 
     return InkWell(
+      key: ValueKey(task.id),
       onLongPress: () {
         setState(() {
           if (isSelected) {
@@ -670,35 +676,25 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                                             task.id,
                                             onDate: pageDate,
                                           );
-                                          setState(() {
-                                            _animatingTaskIds.remove(task.id);
-                                            _fadingTaskIds.remove(task.id);
+                                          // Clear animation state after the
+                                          // current frame renders so the task
+                                          // has already left activeTasks before
+                                          // AnimatedSize/AnimatedOpacity can
+                                          // reverse and cause a visible jump.
+                                          WidgetsBinding.instance
+                                              .addPostFrameCallback((_) {
+                                            if (mounted) {
+                                              setState(() {
+                                                _animatingTaskIds
+                                                    .remove(task.id);
+                                                _fadingTaskIds.remove(task.id);
+                                              });
+                                            }
                                           });
                                         }
                                       },
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
-                              ),
-                              const SizedBox(width: 2),
-                              Visibility(
-                                visible: !isDone,
-                                maintainSize: true,
-                                maintainAnimation: true,
-                                maintainState: true,
-                                child: IconButton(
-                                  icon: const Icon(
-                                    Icons.swap_horiz,
-                                    size: 20,
-                                    color: Colors.grey,
-                                  ),
-                                  onPressed: (_isSelectionMode || task.isPinned)
-                                      ? null
-                                      : () =>
-                                            _showMoveTaskDialog(context, task),
-                                  tooltip: 'Move to another date',
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                ),
                               ),
                             ],
                           ),
@@ -765,17 +761,15 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                         ),
                       ],
                     ),
-                    trailing: !isDone
+                    trailing: (!isDone && !task.isPinned && !_isSelectionMode)
                         ? IconButton(
-                            icon: Icon(
-                              task.isStarred ? Icons.star : Icons.star_border,
-                              color: task.isStarred
-                                  ? Colors.amber
-                                  : Colors.grey,
+                            icon: const Icon(
+                              Icons.swap_horiz,
+                              color: Colors.grey,
                             ),
-                            onPressed: _isSelectionMode
-                                ? null
-                                : () => appState.toggleStar(task.id),
+                            onPressed: () =>
+                                _showMoveMultipleTasksDialog(context, task),
+                            tooltip: 'Move to another date',
                           )
                         : null,
                   ),
@@ -808,35 +802,62 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
     );
   }
 
-  void _showMoveTaskDialog(BuildContext context, Task task) {
-    final prevDay = task.date.subtract(const Duration(days: 1));
-    final nextDay = task.date.add(const Duration(days: 1));
+  void _showMoveMultipleTasksDialog(BuildContext context, [Task? singleTask]) {
+    final appState = context.read<AppState>();
+    final movableTasks = singleTask != null
+        ? [singleTask]
+        : appState.tasks
+            .where((t) => _selectedTaskIds.contains(t.id) && !t.isPinned)
+            .toList();
 
-    final prevLabel = _getDateLabel(prevDay);
-    final nextLabel = _getDateLabel(nextDay);
+    if (movableTasks.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No movable tasks selected (pinned tasks cannot be moved)'),
+        ),
+      );
+      return;
+    }
+
+    void shiftAll(int days) {
+      for (final task in movableTasks) {
+        appState.updateTaskDate(task.id, task.date.add(Duration(days: days)));
+      }
+      if (singleTask == null) setState(() => _selectedTaskIds.clear());
+      Navigator.pop(context);
+    }
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Move Task'),
-        content: const Text('Select a new date for this task:'),
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Move ${movableTasks.length} task${movableTasks.length == 1 ? '' : 's'}',
+        ),
+        content: const Text('Shift all selected tasks by:'),
         actions: [
           TextButton(
-            onPressed: () {
-              context.read<AppState>().updateTaskDate(task.id, prevDay);
-              Navigator.pop(context);
-            },
-            child: Text('Move to $prevLabel'),
+            onPressed: () => shiftAll(-1),
+            child: const Text('← Previous day'),
           ),
           TextButton(
-            onPressed: () {
-              context.read<AppState>().updateTaskDate(task.id, nextDay);
-              Navigator.pop(context);
-            },
-            child: Text('Move to $nextLabel'),
+            onPressed: () => shiftAll(1),
+            child: const Text('Next day →'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final picked = await _showCustomDatePicker(context);
+              if (picked != null) {
+                for (final task in movableTasks) {
+                  appState.updateTaskDate(task.id, DateUtils.dateOnly(picked));
+                }
+                if (singleTask == null) setState(() => _selectedTaskIds.clear());
+              }
+            },
+            child: const Text('Pick date…'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),
           ),
         ],
