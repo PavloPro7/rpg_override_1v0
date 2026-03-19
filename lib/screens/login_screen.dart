@@ -452,6 +452,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: _isLoading
                                 ? null
                                 : () async {
+                                    final bottomPadding = MediaQuery.of(context).padding.bottom;
                                     setState(() => _isLoading = true);
                                     final messenger = ScaffoldMessenger.of(
                                       context,
@@ -468,7 +469,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           margin: EdgeInsets.only(
                                             left: 16, 
                                             right: 16, 
-                                            bottom: 16 + MediaQuery.of(context).padding.bottom,
+                                            bottom: 16 + bottomPadding,
                                           ),
                                         ),
                                       );
@@ -488,6 +489,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: _isLoading
                                 ? null
                                 : () async {
+                                    final bottomPadding = MediaQuery.of(context).padding.bottom;
                                     setState(() => _isLoading = true);
                                     final messenger = ScaffoldMessenger.of(
                                       context,
@@ -504,7 +506,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           margin: EdgeInsets.only(
                                             left: 16, 
                                             right: 16, 
-                                            bottom: 16 + MediaQuery.of(context).padding.bottom,
+                                            bottom: 16 + bottomPadding,
                                           ),
                                         ),
                                       );
@@ -524,6 +526,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: _isLoading
                                   ? null
                                   : () async {
+                                      final bottomPadding = MediaQuery.of(context).padding.bottom;
                                       setState(() => _isLoading = true);
                                       final messenger = ScaffoldMessenger.of(
                                         context,
@@ -540,7 +543,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                             margin: EdgeInsets.only(
                                               left: 16, 
                                               right: 16, 
-                                              bottom: 16 + MediaQuery.of(context).padding.bottom,
+                                              bottom: 16 + bottomPadding,
                                             ),
                                             duration: Duration(seconds: error.length > 50 ? 5 : 3),
                                           ),

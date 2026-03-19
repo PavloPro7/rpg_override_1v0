@@ -13,16 +13,17 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
     final prefs = await SharedPreferences.getInstance();
     final staySignedIn = prefs.getBool('staySignedIn') ?? true;
     if (!staySignedIn) {
       await FirebaseAuth.instance.signOut();
     }
   } catch (e) {
-    // Firebase already initialized or error
     debugPrint('Firebase initialization info: $e');
   }
   runApp(

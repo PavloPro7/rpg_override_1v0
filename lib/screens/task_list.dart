@@ -311,6 +311,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                       Duration(days: settledPage - _initialPage),
                     );
                     if (!DateUtils.isSameDay(newDate, _selectedDate)) {
+                      debugPrint('Swiping: Date changed to $newDate (page: $settledPage)');
                       setState(() {
                         _selectedDate = newDate;
                         _isStarredView = false;
@@ -321,15 +322,19 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
 
                   if (notification is ScrollUpdateNotification) {
                     final page = _pageController.page;
-                    if (page != null && notification.dragDetails == null) {
-                      final settled = page.round();
-                      if ((page - settled).abs() < 0.1) {
-                        checkAndSnap(settled);
+                    if (page != null) {
+                      debugPrint('Swiping: ScrollUpdateNotification (page: $page, dragging: ${notification.dragDetails != null})');
+                      if (notification.dragDetails == null) {
+                        final settled = page.round();
+                        if ((page - settled).abs() < 0.1) {
+                          checkAndSnap(settled);
+                        }
                       }
                     }
                   } else if (notification is ScrollEndNotification) {
                     final settled =
                         _pageController.page?.round() ?? _initialPage;
+                    debugPrint('Swiping: ScrollEndNotification (settled page: $settled)');
                     checkAndSnap(settled);
                   }
                   return false;
@@ -428,7 +433,45 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                     page = _pageController.page ?? page;
                   }
 
+                  final datePageNum = _initialPage + date.difference(_baseDate).inDays;
+                  final distance = (page - datePageNum).abs();
+                  final double colorT = _isStarredView ? 0.0 : (1.0 - distance).clamp(0.0, 1.0);
+                  
+                  final textColor = Color.lerp(
+                    colorScheme.onSurfaceVariant,
+                    colorScheme.primary,
+                    colorT,
+                  );
+
                   final isSelected = DateUtils.isSameDay(date, _selectedDate);
+
+                  Widget indicatorWidget = const SizedBox(height: 3);
+                  if (!_isStarredView && isSelected) {
+                    double diff = page - selectedPageNum;
+                    int pInt = diff.floor();
+                    double frac = diff - pInt;
+
+                    double leftEdge = (pInt * itemWidth) - 12.0 + math.max(0.0, frac * 2.0 - 1.0) * itemWidth;
+                    double rightEdge = (pInt * itemWidth) + 12.0 + math.min(1.0, frac * 2.0) * itemWidth;
+
+                    double indicatorWidth = rightEdge - leftEdge;
+                    double indicatorCenter = (leftEdge + rightEdge) / 2.0;
+
+                    indicatorWidget = OverflowBox(
+                      maxWidth: double.infinity,
+                      child: Transform.translate(
+                        offset: Offset(indicatorCenter, 0),
+                        child: Container(
+                          width: indicatorWidth,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                    );
+                  }
 
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -436,12 +479,8 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                       Text(
                         label,
                         style: TextStyle(
-                          color: (!_isStarredView && isSelected)
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant,
-                          fontWeight: (!_isStarredView && isSelected)
-                              ? FontWeight.bold
-                              : FontWeight.normal,
+                          color: textColor,
+                          fontWeight: colorT > 0.5 ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                       Container(
@@ -449,26 +488,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                         height: 3,
                         width: itemWidth,
                         alignment: Alignment.center,
-                        child: (!_isStarredView && isSelected)
-                            ? Transform.translate(
-                                // This creates the Google Tasks stretch physics effect
-                                offset: Offset(
-                                  (page - selectedPageNum) * itemWidth / 2,
-                                  0,
-                                ),
-                                child: Container(
-                                  width:
-                                      24.0 +
-                                      ((page - selectedPageNum).abs() *
-                                          itemWidth),
-                                  height: 3,
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.primary,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              )
-                            : const SizedBox(height: 3),
+                        child: indicatorWidget,
                       ),
                     ],
                   );
