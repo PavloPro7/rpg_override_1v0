@@ -696,7 +696,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                     ),
                     title: Row(
                       children: [
-                        if (task.isPinned) ...[
+                        if (task.isPinned && task.pinnedUntil == null) ...[
                           IconButton(
                             icon: const Icon(
                               Icons.push_pin,
@@ -818,9 +818,9 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () {
               Navigator.pop(ctx);
-              appState.deleteTasks([task.id]);
+              appState.endPinnedTaskToday(task.id);
             },
-            child: const Text('Delete entirely'),
+            child: const Text('End today'),
           ),
         ],
       ),

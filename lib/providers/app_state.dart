@@ -145,8 +145,12 @@ class AppState extends ChangeNotifier {
   List<Task> getTasksForDate(DateTime date) {
     return _tasks.where((t) {
       if (t.isPinned) {
-        final endDate = t.date.add(const Duration(days: 35));
+        final endDate = t.pinnedUntil ?? t.date.add(const Duration(days: 35));
         return !date.isBefore(t.date) && !date.isAfter(endDate);
+      }
+      // Ended pinned tasks (pinnedUntil set, isPinned false): show from original date to pinnedUntil
+      if (t.pinnedUntil != null && !t.isPinned) {
+        return !date.isBefore(t.date) && !date.isAfter(t.pinnedUntil!);
       }
       return DateUtils.isSameDay(t.date, date);
     }).toList();
@@ -157,6 +161,7 @@ class AppState extends ChangeNotifier {
     String email,
     String password,
   ) async {
+    debugPrint('[AppState] signUp: email=$email');
     _isSigningUp = true;
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
@@ -180,8 +185,10 @@ class AppState extends ChangeNotifier {
       await _savePreferences();
       // Finalize autofill context
       TextInput.finishAutofillContext();
+      debugPrint('[AppState] signUp: success email=$email');
       return null;
     } on FirebaseAuthException catch (e) {
+      debugPrint('[AppState] signUp: error=${e.message}');
       return e.message;
     } finally {
       _isSigningUp = false;
@@ -189,24 +196,32 @@ class AppState extends ChangeNotifier {
   }
 
   Future<String?> signIn(String email, String password) async {
+    debugPrint('[AppState] signIn: email=$email');
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
       await _savePreferences();
       // Finalize autofill context
       TextInput.finishAutofillContext();
+      debugPrint('[AppState] signIn: success email=$email');
       return null;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'invalid-credential' || e.code == 'wrong-password' || e.code == 'user-not-found') {
+        debugPrint('[AppState] signIn: error=invalid-credential');
         return 'Password or email incorrect';
       }
+      debugPrint('[AppState] signIn: error=${e.message}');
       return e.message;
     }
   }
 
   Future<String?> signInWithGoogle() async {
+    debugPrint('[AppState] signInWithGoogle: started');
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null; // Cancelled
+      if (googleUser == null) {
+        debugPrint('[AppState] signInWithGoogle: cancelled');
+        return null; // Cancelled
+      }
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
@@ -219,6 +234,7 @@ class AppState extends ChangeNotifier {
 
       // If it's a new user, initialize profile
       if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        debugPrint('[AppState] signInWithGoogle: new user uid=${userCredential.user?.uid}');
         final user = userCredential.user;
         if (user != null) {
           await _firestore.collection('users').doc(user.uid).set({
@@ -228,6 +244,8 @@ class AppState extends ChangeNotifier {
             'createdAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
         }
+      } else {
+        debugPrint('[AppState] signInWithGoogle: existing user uid=${userCredential.user?.uid}');
       }
 
       await _savePreferences();
@@ -235,13 +253,16 @@ class AppState extends ChangeNotifier {
       TextInput.finishAutofillContext();
       return null;
     } on FirebaseAuthException catch (e) {
+      debugPrint('[AppState] signInWithGoogle: error=${e.message}');
       return e.message;
     } catch (e) {
+      debugPrint('[AppState] signInWithGoogle: error=$e');
       return e.toString();
     }
   }
 
   Future<String?> signInWithApple() async {
+    debugPrint('[AppState] signInWithApple: started');
     try {
       final appleCredential = await SignInWithApple.getAppleIDCredential(
         scopes: [
@@ -260,6 +281,7 @@ class AppState extends ChangeNotifier {
 
       // If it's a new user, initialize profile
       if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        debugPrint('[AppState] signInWithApple: new user uid=${userCredential.user?.uid}');
         final user = userCredential.user;
         if (user != null) {
           await _firestore.collection('users').doc(user.uid).set({
@@ -269,18 +291,23 @@ class AppState extends ChangeNotifier {
             'createdAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
         }
+      } else {
+        debugPrint('[AppState] signInWithApple: existing user uid=${userCredential.user?.uid}');
       }
 
       await _savePreferences();
       TextInput.finishAutofillContext();
       return null;
     } on FirebaseAuthException catch (e) {
+      debugPrint('[AppState] signInWithApple: error=${e.message}');
       return e.message;
     } catch (e) {
       if (e is SignInWithAppleAuthorizationException &&
           e.code == AuthorizationErrorCode.canceled) {
+        debugPrint('[AppState] signInWithApple: cancelled');
         return null; // Cancelled
       }
+      debugPrint('[AppState] signInWithApple: error=$e');
       return e.toString();
     }
   }
@@ -289,6 +316,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> resetAccount() async {
     if (_user == null) return;
+    debugPrint('[AppState] resetAccount: uid=${_user!.uid}');
     try {
       final userDoc = _firestore.collection('users').doc(_user!.uid);
       
@@ -319,6 +347,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> deleteAccount() async {
     if (_user == null) return;
+    debugPrint('[AppState] deleteAccount: uid=${_user!.uid}');
     try {
       final userDoc = _firestore.collection('users').doc(_user!.uid);
       
@@ -364,6 +393,7 @@ class AppState extends ChangeNotifier {
 
   Future<String?> updateProfile(String name, int age, String? avatarUrl) async {
     if (_user == null) return "No user logged in";
+    debugPrint('[AppState] updateProfile: name="$name" age=$age');
     try {
       await _firestore.collection('users').doc(_user!.uid).set({
         'name': name,
@@ -383,9 +413,12 @@ class AppState extends ChangeNotifier {
 
   Future<String?> updateEmail(String newEmail) async {
     if (_user == null) return "No user logged in";
+    final masked = newEmail.length > 3 ? '${newEmail.substring(0, 3)}***@${newEmail.split('@').last}' : '***';
+    debugPrint('[AppState] updateEmail: newEmail=$masked');
     try {
       // Modern secure way: sends verification to new email before updating
       await _user!.verifyBeforeUpdateEmail(newEmail);
+      debugPrint('[AppState] updateEmail: verification sent to $masked');
       return null;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
@@ -399,8 +432,10 @@ class AppState extends ChangeNotifier {
 
   Future<String?> updatePassword(String newPassword) async {
     if (_user == null) return "No user logged in";
+    debugPrint('[AppState] updatePassword: password update attempted');
     try {
       await _user!.updatePassword(newPassword);
+      debugPrint('[AppState] updatePassword: success');
       return null;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
@@ -413,11 +448,14 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    debugPrint('[AppState] signOut: uid=${_user?.uid}');
     await _auth.signOut();
+    debugPrint('[AppState] signOut: done');
   }
 
   Future<void> _loadFromFirestore() async {
     if (_user == null || _isSigningUp) return;
+    debugPrint('[AppState] _loadFromFirestore: uid=${_user!.uid}');
 
     final userDoc = _firestore.collection('users').doc(_user!.uid);
 
@@ -470,6 +508,7 @@ class AppState extends ChangeNotifier {
     final tasksSnapshot = await userDoc.collection('tasks').get();
     _tasks = tasksSnapshot.docs.map((doc) => Task.fromMap(doc.data())).toList();
 
+    debugPrint('[AppState] _loadFromFirestore: loaded ${_skills.length} skills, ${_tasks.length} tasks');
     _isProfileLoaded = true;
     notifyListeners();
   }
@@ -482,6 +521,7 @@ class AppState extends ChangeNotifier {
     int difficulty = 1,
   }) async {
     if (_user == null) return;
+    debugPrint('[AppState] addTask: title="$title" skillId=$skillId date=${date?.toIso8601String()} difficulty=$difficulty');
     final newTask = Task(
       id: _uuid.v4(),
       title: title,
@@ -514,6 +554,7 @@ class AppState extends ChangeNotifier {
     int? difficulty,
   }) async {
     if (_user == null) return;
+    debugPrint('[AppState] updateTaskContent: taskId=$taskId title="$title" skillId=$skillId date=${date?.toIso8601String()}');
     final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
     if (taskIndex == -1) return;
 
@@ -545,6 +586,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> deleteTasks(List<String> taskIds) async {
     if (_user == null) return;
+    debugPrint('[AppState] deleteTasks: ${taskIds.length} tasks ids=$taskIds');
 
     // Update local state
     _tasks.removeWhere((t) => taskIds.contains(t.id));
@@ -568,6 +610,7 @@ class AppState extends ChangeNotifier {
     final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
     if (taskIndex != -1) {
       final normalizedDate = DateUtils.dateOnly(newDate);
+      debugPrint('[AppState] updateTaskDate: taskId=$taskId oldDate=${_tasks[taskIndex].date.toIso8601String()} → newDate=${normalizedDate.toIso8601String()}');
       final now = DateTime.now();
       _tasks[taskIndex] = _tasks[taskIndex].copyWith(date: normalizedDate, updatedAt: now);
       notifyListeners();
@@ -588,6 +631,7 @@ class AppState extends ChangeNotifier {
     String icon,
   ) async {
     if (_user == null) return;
+    debugPrint('[AppState] addSkill: name="$name" startLevel=$startLevel icon=$icon');
     final newSkill = Skill(
       id: name.toLowerCase().replaceAll(' ', '_'),
       name: name,
@@ -609,6 +653,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> updateSkill(Skill skill) async {
     if (_user == null) return;
+    debugPrint('[AppState] updateSkill: skillId=${skill.id} name="${skill.name}"');
     final index = _skills.indexWhere((s) => s.id == skill.id);
     if (index != -1) {
       _skills[index] = skill;
@@ -624,6 +669,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> removeSkill(String skillId) async {
     if (_user == null) return;
+    debugPrint('[AppState] removeSkill: skillId=$skillId');
     _skills.removeWhere((s) => s.id == skillId);
     notifyListeners();
     await _firestore
@@ -642,17 +688,21 @@ class AppState extends ChangeNotifier {
     final task = _tasks[taskIndex];
     final date = onDate ?? DateTime.now();
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    debugPrint('[AppState] completeTask: taskId=$taskId onDate=$dateStr isPinned=${task.isPinned} skillId=${task.skillId}');
 
     final now = DateTime.now();
 
     // Skip XP logic for general tasks
     if (task.skillId == 'none') {
       if (task.isPinned) {
-        if (task.completedDates.contains(dateStr)) {
+        final wasCompleted = task.completedDates.contains(dateStr);
+        if (wasCompleted) {
           task.completedDates.remove(dateStr);
         } else {
           task.completedDates.add(dateStr);
         }
+        debugPrint('[AppState] completeTask: general pinned → completed=${!wasCompleted} date=$dateStr');
+        _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
         notifyListeners();
         await _firestore
             .collection('users')
@@ -662,6 +712,8 @@ class AppState extends ChangeNotifier {
             .update({'completedDates': task.completedDates, 'updatedAt': now.toIso8601String()});
       } else {
         task.isCompleted = !task.isCompleted;
+        debugPrint('[AppState] completeTask: general regular → completed=${task.isCompleted}');
+        _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
         await _firestore
             .collection('users')
             .doc(_user!.uid)
@@ -677,20 +729,24 @@ class AppState extends ChangeNotifier {
 
     if (task.isPinned) {
       // Toggle completion for specific day
+      final double xpAmount = 30.0 * (task.difficulty / 5.0);
       if (task.completedDates.contains(dateStr)) {
         task.completedDates.remove(dateStr);
         // Undo XP reward (Tripled: 10.0 * 3)
         if (skillIndex != -1) {
-          _skills[skillIndex].addXp(-(30.0 * (task.difficulty / 5.0)));
+          _skills[skillIndex].addXp(-xpAmount);
         }
+        debugPrint('[AppState] completeTask: skill pinned → uncompleted date=$dateStr xp=-$xpAmount');
       } else {
         task.completedDates.add(dateStr);
         // Add XP reward (Tripled: 10.0 * 3)
         if (skillIndex != -1) {
-          _skills[skillIndex].addXp(30.0 * (task.difficulty / 5.0));
+          _skills[skillIndex].addXp(xpAmount);
         }
+        debugPrint('[AppState] completeTask: skill pinned → completed date=$dateStr xp=+$xpAmount');
       }
 
+      _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
       notifyListeners();
 
       await _firestore
@@ -716,8 +772,10 @@ class AppState extends ChangeNotifier {
         final double xpAmount = 30.0 * (task.difficulty / 5.0);
         if (task.isCompleted) {
           _skills[skillIndex].addXp(xpAmount); // Tripled XP * multiplier
+          debugPrint('[AppState] completeTask: skill regular → completed xp=+$xpAmount');
         } else {
           _skills[skillIndex].addXp(-xpAmount); // Tripled XP * multiplier
+          debugPrint('[AppState] completeTask: skill regular → uncompleted xp=-$xpAmount');
         }
 
         await _firestore
@@ -735,6 +793,7 @@ class AppState extends ChangeNotifier {
           .doc(taskId)
           .update({'isCompleted': task.isCompleted, 'updatedAt': now.toIso8601String()});
 
+      _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
       notifyListeners();
     }
   }
@@ -746,10 +805,12 @@ class AppState extends ChangeNotifier {
     final now = DateTime.now();
     final today = DateUtils.dateOnly(now);
     final wasUnpinned = !_tasks[taskIndex].isPinned;
+    debugPrint('[AppState] togglePin: taskId=$taskId wasPinned=${!wasUnpinned} → nowPinned=$wasUnpinned newDate=${wasUnpinned ? today.toIso8601String() : _tasks[taskIndex].date.toIso8601String()}');
     _tasks[taskIndex] = _tasks[taskIndex].copyWith(
       isPinned: wasUnpinned,
       date: wasUnpinned ? today : _tasks[taskIndex].date,
       updatedAt: now,
+      pinnedUntil: wasUnpinned ? () => null : null,
     );
     notifyListeners();
     await _firestore
@@ -761,11 +822,13 @@ class AppState extends ChangeNotifier {
           'isPinned': _tasks[taskIndex].isPinned,
           'date': _tasks[taskIndex].date.toIso8601String(),
           'updatedAt': now.toIso8601String(),
+          if (wasUnpinned) 'pinnedUntil': null,
         });
   }
 
   Future<void> unpinKeepToday(String taskId) async {
     if (_user == null) return;
+    debugPrint('[AppState] unpinKeepToday: taskId=$taskId');
     final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
     if (taskIndex == -1) return;
     final now = DateTime.now();
@@ -790,18 +853,31 @@ class AppState extends ChangeNotifier {
 
   Future<void> togglePinTasks(List<String> taskIds, bool pinned) async {
     if (_user == null) return;
+    debugPrint('[AppState] togglePinTasks: ${taskIds.length} tasks pinned=$pinned');
 
     final batch = _firestore.batch();
     final userTasksRef = _firestore
         .collection('users')
         .doc(_user!.uid)
         .collection('tasks');
+    final today = DateUtils.dateOnly(DateTime.now());
+    final now = DateTime.now();
 
     for (final id in taskIds) {
       final index = _tasks.indexWhere((t) => t.id == id);
       if (index != -1) {
-        _tasks[index].isPinned = pinned;
-        batch.update(userTasksRef.doc(id), {'isPinned': pinned});
+        _tasks[index] = _tasks[index].copyWith(
+          isPinned: pinned,
+          date: pinned ? today : _tasks[index].date,
+          updatedAt: now,
+          pinnedUntil: pinned ? () => null : null,
+        );
+        batch.update(userTasksRef.doc(id), {
+          'isPinned': pinned,
+          'date': _tasks[index].date.toIso8601String(),
+          'updatedAt': now.toIso8601String(),
+          if (pinned) 'pinnedUntil': null,
+        });
       }
     }
 
@@ -809,11 +885,38 @@ class AppState extends ChangeNotifier {
     await batch.commit();
   }
 
+  Future<void> endPinnedTaskToday(String taskId) async {
+    if (_user == null) return;
+    debugPrint('[AppState] endPinnedTaskToday: taskId=$taskId');
+    final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
+    if (taskIndex == -1) return;
+    final now = DateTime.now();
+    final yesterday = DateUtils.dateOnly(now).subtract(const Duration(days: 1));
+    debugPrint('[AppState] endPinnedTaskToday: pinnedUntil=${yesterday.toIso8601String()}');
+    _tasks[taskIndex] = _tasks[taskIndex].copyWith(
+      isPinned: false,
+      pinnedUntil: () => yesterday,
+      updatedAt: now,
+    );
+    notifyListeners();
+    await _firestore
+        .collection('users')
+        .doc(_user!.uid)
+        .collection('tasks')
+        .doc(taskId)
+        .update({
+          'isPinned': false,
+          'pinnedUntil': yesterday.toIso8601String(),
+          'updatedAt': now.toIso8601String(),
+        });
+  }
+
   Future<void> toggleStar(String taskId) async {
     if (_user == null) return;
     final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
     if (taskIndex != -1) {
       _tasks[taskIndex].isStarred = !_tasks[taskIndex].isStarred;
+      debugPrint('[AppState] toggleStar: taskId=$taskId isStarred=${_tasks[taskIndex].isStarred}');
       final now = DateTime.now();
       _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
       notifyListeners();
@@ -829,6 +932,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> toggleStarTasks(List<String> taskIds, bool starred) async {
     if (_user == null) return;
+    debugPrint('[AppState] toggleStarTasks: ${taskIds.length} tasks starred=$starred');
 
     final batch = _firestore.batch();
     final userTasksRef = _firestore
@@ -850,6 +954,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> applyDailyPenalty() async {
     if (_user == null) return;
+    debugPrint('[AppState] applyDailyPenalty: ${_skills.length} skills penalized');
     for (var skill in _skills) {
       skill.applyDailyPenalty(0.1);
       await _firestore

@@ -3,13 +3,14 @@ class Task {
   final String title;
   final String skillId;
   final DateTime date;
-  final DateTime? time; // Optional time
+  final DateTime? time;
   bool isCompleted;
   bool isStarred;
   bool isPinned;
   List<String> completedDates;
   final int difficulty;
   final DateTime? updatedAt;
+  final DateTime? pinnedUntil;
 
   Task({
     required this.id,
@@ -23,6 +24,7 @@ class Task {
     this.completedDates = const [],
     this.difficulty = 1,
     this.updatedAt,
+    this.pinnedUntil,
   });
 
   Map<String, dynamic> toMap() {
@@ -38,6 +40,7 @@ class Task {
       'completedDates': completedDates,
       'difficulty': difficulty,
       'updatedAt': updatedAt?.toIso8601String(),
+      'pinnedUntil': pinnedUntil?.toIso8601String(),
     };
   }
 
@@ -53,10 +56,15 @@ class Task {
       isPinned: map['isPinned'] ?? false,
       completedDates: List<String>.from(map['completedDates'] ?? []),
       difficulty: map['difficulty'] ?? 1,
-      updatedAt: map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
+      updatedAt:
+          map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
+      pinnedUntil:
+          map['pinnedUntil'] != null ? DateTime.parse(map['pinnedUntil']) : null,
     );
   }
 
+  // Use DateTime? Function()? for nullable fields so callers can pass
+  // () => null to explicitly clear, or omit to keep the existing value.
   Task copyWith({
     String? id,
     String? title,
@@ -69,6 +77,7 @@ class Task {
     List<String>? completedDates,
     int? difficulty,
     DateTime? updatedAt,
+    DateTime? Function()? pinnedUntil,
   }) {
     return Task(
       id: id ?? this.id,
@@ -82,6 +91,7 @@ class Task {
       completedDates: completedDates ?? this.completedDates,
       difficulty: difficulty ?? this.difficulty,
       updatedAt: updatedAt ?? this.updatedAt,
+      pinnedUntil: pinnedUntil != null ? pinnedUntil() : this.pinnedUntil,
     );
   }
 }
