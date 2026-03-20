@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter analyze:*)"
+      "Bash(flutter analyze:*)",
+      "Bash(/c/Users/03ppc/src/flutter/bin/flutter.bat analyze:*)"
     ]
   }
 }

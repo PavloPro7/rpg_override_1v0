@@ -146,37 +146,20 @@ class AppState extends ChangeNotifier {
 
   List<Task> getTasksForDate(DateTime date) {
     final dateOnly = DateUtils.dateOnly(date);
-    final dateStr = dateOnly.toIso8601String();
-    debugPrint('[getTasksForDate] === Querying date: $dateStr, total tasks: ${_tasks.length} ===');
-
-    final results = <Task>[];
-
-    for (final t in _tasks) {
-      final taskDateOnly = DateUtils.dateOnly(t.date);
-
+    return _tasks.where((t) {
+      final taskDate = DateUtils.dateOnly(t.date);
       if (t.isPinned) {
         final endDate = t.pinnedUntil != null
             ? DateUtils.dateOnly(t.pinnedUntil!)
-            : taskDateOnly.add(const Duration(days: 35));
-        final match = !dateOnly.isBefore(taskDateOnly) && !dateOnly.isAfter(endDate);
-        debugPrint('[getTasksForDate]   PINNED "${t.title}" id=${t.id} date=${taskDateOnly.toIso8601String()} pinnedUntil=${t.pinnedUntil?.toIso8601String()} endDate=${endDate.toIso8601String()} → match=$match');
-        if (match) results.add(t);
-      } else if (t.pinnedUntil != null) {
-        final endDate = DateUtils.dateOnly(t.pinnedUntil!);
-        final match = !dateOnly.isBefore(taskDateOnly) && !dateOnly.isAfter(endDate);
-        debugPrint('[getTasksForDate]   ENDED-PIN "${t.title}" id=${t.id} date=${taskDateOnly.toIso8601String()} pinnedUntil=${endDate.toIso8601String()} → match=$match');
-        if (match) results.add(t);
-      } else {
-        final match = DateUtils.isSameDay(taskDateOnly, dateOnly);
-        if (match) {
-          debugPrint('[getTasksForDate]   REGULAR "${t.title}" id=${t.id} date=${taskDateOnly.toIso8601String()} → match=true');
-        }
-        if (match) results.add(t);
+            : taskDate.add(const Duration(days: 35));
+        return !dateOnly.isBefore(taskDate) && !dateOnly.isAfter(endDate);
       }
-    }
-
-    debugPrint('[getTasksForDate] === Results for $dateStr: ${results.length} tasks ===');
-    return results;
+      if (t.pinnedUntil != null) {
+        final endDate = DateUtils.dateOnly(t.pinnedUntil!);
+        return !dateOnly.isBefore(taskDate) && !dateOnly.isAfter(endDate);
+      }
+      return DateUtils.isSameDay(taskDate, dateOnly);
+    }).toList();
   }
 
   // Auth Methods
@@ -575,12 +558,16 @@ class AppState extends ChangeNotifier {
     _tasks.add(newTask);
     notifyListeners();
 
-    await _firestore
-        .collection('users')
-        .doc(_user!.uid)
-        .collection('tasks')
-        .doc(newTask.id)
-        .set(newTask.toMap());
+    try {
+      await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('tasks')
+          .doc(newTask.id)
+          .set(newTask.toMap());
+    } catch (e) {
+      debugPrint('[AppState] Firestore write failed: $e');
+    }
   }
 
   Future<void> updateTaskContent(
@@ -617,12 +604,16 @@ class AppState extends ChangeNotifier {
     _tasks[taskIndex] = updatedTask;
     notifyListeners();
 
-    await _firestore
-        .collection('users')
-        .doc(_user!.uid)
-        .collection('tasks')
-        .doc(taskId)
-        .set(updatedTask.toMap());
+    try {
+      await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('tasks')
+          .doc(taskId)
+          .set(updatedTask.toMap());
+    } catch (e) {
+      debugPrint('[AppState] Firestore write failed: $e');
+    }
   }
 
   Future<void> deleteTasks(List<String> taskIds) async {
@@ -643,7 +634,11 @@ class AppState extends ChangeNotifier {
     for (final id in taskIds) {
       batch.delete(userTasksRef.doc(id));
     }
-    await batch.commit();
+    try {
+      await batch.commit();
+    } catch (e) {
+      debugPrint('[AppState] Firestore write failed: $e');
+    }
   }
 
   Future<void> updateTaskDate(String taskId, DateTime newDate) async {
@@ -661,15 +656,19 @@ class AppState extends ChangeNotifier {
       );
       notifyListeners();
 
-      await _firestore
-          .collection('users')
-          .doc(_user!.uid)
-          .collection('tasks')
-          .doc(taskId)
-          .update({
-            'date': normalizedDate.toIso8601String(),
-            'updatedAt': now.toIso8601String(),
-          });
+      try {
+        await _firestore
+            .collection('users')
+            .doc(_user!.uid)
+            .collection('tasks')
+            .doc(taskId)
+            .update({
+              'date': normalizedDate.toIso8601String(),
+              'updatedAt': now.toIso8601String(),
+            });
+      } catch (e) {
+        debugPrint('[AppState] Firestore write failed: $e');
+      }
     }
   }
 
@@ -694,12 +693,16 @@ class AppState extends ChangeNotifier {
     _skills.add(newSkill);
     notifyListeners();
 
-    await _firestore
-        .collection('users')
-        .doc(_user!.uid)
-        .collection('skills')
-        .doc(newSkill.id)
-        .set(newSkill.toMap());
+    try {
+      await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('skills')
+          .doc(newSkill.id)
+          .set(newSkill.toMap());
+    } catch (e) {
+      debugPrint('[AppState] Firestore write failed: $e');
+    }
   }
 
   Future<void> updateSkill(Skill skill) async {
@@ -711,12 +714,16 @@ class AppState extends ChangeNotifier {
     if (index != -1) {
       _skills[index] = skill;
       notifyListeners();
-      await _firestore
-          .collection('users')
-          .doc(_user!.uid)
-          .collection('skills')
-          .doc(skill.id)
-          .update(skill.toMap());
+      try {
+        await _firestore
+            .collection('users')
+            .doc(_user!.uid)
+            .collection('skills')
+            .doc(skill.id)
+            .update(skill.toMap());
+      } catch (e) {
+        debugPrint('[AppState] Firestore write failed: $e');
+      }
     }
   }
 
@@ -725,12 +732,16 @@ class AppState extends ChangeNotifier {
     debugPrint('[AppState] removeSkill: skillId=$skillId');
     _skills.removeWhere((s) => s.id == skillId);
     notifyListeners();
-    await _firestore
-        .collection('users')
-        .doc(_user!.uid)
-        .collection('skills')
-        .doc(skillId)
-        .delete();
+    try {
+      await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('skills')
+          .doc(skillId)
+          .delete();
+    } catch (e) {
+      debugPrint('[AppState] Firestore write failed: $e');
+    }
   }
 
   Future<void> completeTask(String taskId, {DateTime? onDate}) async {
@@ -751,41 +762,56 @@ class AppState extends ChangeNotifier {
     if (task.skillId == 'none') {
       if (task.isPinned) {
         final wasCompleted = task.completedDates.contains(dateStr);
+        final newDates = List<String>.from(task.completedDates);
         if (wasCompleted) {
-          task.completedDates.remove(dateStr);
+          newDates.remove(dateStr);
         } else {
-          task.completedDates.add(dateStr);
+          newDates.add(dateStr);
         }
         debugPrint(
           '[AppState] completeTask: general pinned → completed=${!wasCompleted} date=$dateStr',
         );
-        _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
-        notifyListeners();
-        await _firestore
-            .collection('users')
-            .doc(_user!.uid)
-            .collection('tasks')
-            .doc(taskId)
-            .update({
-              'completedDates': task.completedDates,
-              'updatedAt': now.toIso8601String(),
-            });
-      } else {
-        task.isCompleted = !task.isCompleted;
-        debugPrint(
-          '[AppState] completeTask: general regular → completed=${task.isCompleted}',
+        _tasks[taskIndex] = _tasks[taskIndex].copyWith(
+          completedDates: newDates,
+          updatedAt: now,
         );
-        _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
-        await _firestore
-            .collection('users')
-            .doc(_user!.uid)
-            .collection('tasks')
-            .doc(taskId)
-            .update({
-              'isCompleted': task.isCompleted,
-              'updatedAt': now.toIso8601String(),
-            });
         notifyListeners();
+        try {
+          await _firestore
+              .collection('users')
+              .doc(_user!.uid)
+              .collection('tasks')
+              .doc(taskId)
+              .update({
+                'completedDates': newDates,
+                'updatedAt': now.toIso8601String(),
+              });
+        } catch (e) {
+          debugPrint('[AppState] Firestore write failed: $e');
+        }
+      } else {
+        final newCompleted = !task.isCompleted;
+        debugPrint(
+          '[AppState] completeTask: general regular → completed=$newCompleted',
+        );
+        _tasks[taskIndex] = _tasks[taskIndex].copyWith(
+          isCompleted: newCompleted,
+          updatedAt: now,
+        );
+        notifyListeners();
+        try {
+          await _firestore
+              .collection('users')
+              .doc(_user!.uid)
+              .collection('tasks')
+              .doc(taskId)
+              .update({
+                'isCompleted': newCompleted,
+                'updatedAt': now.toIso8601String(),
+              });
+        } catch (e) {
+          debugPrint('[AppState] Firestore write failed: $e');
+        }
       }
       return;
     }
@@ -795,85 +821,117 @@ class AppState extends ChangeNotifier {
     if (task.isPinned) {
       // Toggle completion for specific day
       final double xpAmount = 30.0 * (task.difficulty / 5.0);
-      if (task.completedDates.contains(dateStr)) {
-        task.completedDates.remove(dateStr);
-        // Undo XP reward (Tripled: 10.0 * 3)
+      final wasCompleted = task.completedDates.contains(dateStr);
+      final newDates = List<String>.from(task.completedDates);
+      if (wasCompleted) {
+        newDates.remove(dateStr);
         if (skillIndex != -1) {
-          _skills[skillIndex].addXp(-xpAmount);
+          _skills[skillIndex] = _skills[skillIndex].copyWith(
+            xp: (_skills[skillIndex].xp - xpAmount).clamp(0.0, double.infinity),
+          );
         }
         debugPrint(
           '[AppState] completeTask: skill pinned → uncompleted date=$dateStr xp=-$xpAmount',
         );
       } else {
-        task.completedDates.add(dateStr);
-        // Add XP reward (Tripled: 10.0 * 3)
+        newDates.add(dateStr);
         if (skillIndex != -1) {
-          _skills[skillIndex].addXp(xpAmount);
+          _skills[skillIndex] = _skills[skillIndex].copyWith(
+            xp: _skills[skillIndex].xp + xpAmount,
+          );
         }
         debugPrint(
           '[AppState] completeTask: skill pinned → completed date=$dateStr xp=+$xpAmount',
         );
       }
 
-      _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
+      _tasks[taskIndex] = _tasks[taskIndex].copyWith(
+        completedDates: newDates,
+        updatedAt: now,
+      );
       notifyListeners();
 
-      await _firestore
-          .collection('users')
-          .doc(_user!.uid)
-          .collection('tasks')
-          .doc(taskId)
-          .update({
-            'completedDates': task.completedDates,
-            'updatedAt': now.toIso8601String(),
-          });
-
-      if (skillIndex != -1) {
+      try {
         await _firestore
             .collection('users')
             .doc(_user!.uid)
-            .collection('skills')
-            .doc(_skills[skillIndex].id)
-            .update({'xp': _skills[skillIndex].xp});
+            .collection('tasks')
+            .doc(taskId)
+            .update({
+              'completedDates': newDates,
+              'updatedAt': now.toIso8601String(),
+            });
+      } catch (e) {
+        debugPrint('[AppState] Firestore write failed: $e');
+      }
+
+      if (skillIndex != -1) {
+        try {
+          await _firestore
+              .collection('users')
+              .doc(_user!.uid)
+              .collection('skills')
+              .doc(_skills[skillIndex].id)
+              .update({'xp': _skills[skillIndex].xp});
+        } catch (e) {
+          debugPrint('[AppState] Firestore write failed: $e');
+        }
       }
     } else {
       // Toggle regular task completion
-      task.isCompleted = !task.isCompleted;
+      final newCompleted = !task.isCompleted;
+      final double xpAmount = 30.0 * (task.difficulty / 5.0);
 
       if (skillIndex != -1) {
-        final double xpAmount = 30.0 * (task.difficulty / 5.0);
-        if (task.isCompleted) {
-          _skills[skillIndex].addXp(xpAmount); // Tripled XP * multiplier
+        if (newCompleted) {
+          _skills[skillIndex] = _skills[skillIndex].copyWith(
+            xp: _skills[skillIndex].xp + xpAmount,
+          );
           debugPrint(
             '[AppState] completeTask: skill regular → completed xp=+$xpAmount',
           );
         } else {
-          _skills[skillIndex].addXp(-xpAmount); // Tripled XP * multiplier
+          _skills[skillIndex] = _skills[skillIndex].copyWith(
+            xp: (_skills[skillIndex].xp - xpAmount).clamp(0.0, double.infinity),
+          );
           debugPrint(
             '[AppState] completeTask: skill regular → uncompleted xp=-$xpAmount',
           );
         }
+      }
 
+      _tasks[taskIndex] = _tasks[taskIndex].copyWith(
+        isCompleted: newCompleted,
+        updatedAt: now,
+      );
+      notifyListeners();
+
+      if (skillIndex != -1) {
+        try {
+          await _firestore
+              .collection('users')
+              .doc(_user!.uid)
+              .collection('skills')
+              .doc(_skills[skillIndex].id)
+              .update({'xp': _skills[skillIndex].xp});
+        } catch (e) {
+          debugPrint('[AppState] Firestore write failed: $e');
+        }
+      }
+
+      try {
         await _firestore
             .collection('users')
             .doc(_user!.uid)
-            .collection('skills')
-            .doc(_skills[skillIndex].id)
-            .update({'xp': _skills[skillIndex].xp});
+            .collection('tasks')
+            .doc(taskId)
+            .update({
+              'isCompleted': newCompleted,
+              'updatedAt': now.toIso8601String(),
+            });
+      } catch (e) {
+        debugPrint('[AppState] Firestore write failed: $e');
       }
-
-      await _firestore
-          .collection('users')
-          .doc(_user!.uid)
-          .collection('tasks')
-          .doc(taskId)
-          .update({
-            'isCompleted': task.isCompleted,
-            'updatedAt': now.toIso8601String(),
-          });
-
-      _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
-      notifyListeners();
     }
   }
 
@@ -894,17 +952,21 @@ class AppState extends ChangeNotifier {
       pinnedUntil: wasUnpinned ? () => null : null,
     );
     notifyListeners();
-    await _firestore
-        .collection('users')
-        .doc(_user!.uid)
-        .collection('tasks')
-        .doc(taskId)
-        .update({
-          'isPinned': _tasks[taskIndex].isPinned,
-          'date': _tasks[taskIndex].date.toIso8601String(),
-          'updatedAt': now.toIso8601String(),
-          if (wasUnpinned) 'pinnedUntil': null,
-        });
+    try {
+      await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('tasks')
+          .doc(taskId)
+          .update({
+            'isPinned': _tasks[taskIndex].isPinned,
+            'date': _tasks[taskIndex].date.toIso8601String(),
+            'updatedAt': now.toIso8601String(),
+            if (wasUnpinned) 'pinnedUntil': null,
+          });
+    } catch (e) {
+      debugPrint('[AppState] Firestore write failed: $e');
+    }
   }
 
   Future<void> unpinKeepToday(String taskId) async {
@@ -920,16 +982,20 @@ class AppState extends ChangeNotifier {
       updatedAt: now,
     );
     notifyListeners();
-    await _firestore
-        .collection('users')
-        .doc(_user!.uid)
-        .collection('tasks')
-        .doc(taskId)
-        .update({
-          'isPinned': false,
-          'date': today.toIso8601String(),
-          'updatedAt': now.toIso8601String(),
-        });
+    try {
+      await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('tasks')
+          .doc(taskId)
+          .update({
+            'isPinned': false,
+            'date': today.toIso8601String(),
+            'updatedAt': now.toIso8601String(),
+          });
+    } catch (e) {
+      debugPrint('[AppState] Firestore write failed: $e');
+    }
   }
 
   Future<void> togglePinTasks(List<String> taskIds, bool pinned) async {
@@ -965,7 +1031,11 @@ class AppState extends ChangeNotifier {
     }
 
     notifyListeners();
-    await batch.commit();
+    try {
+      await batch.commit();
+    } catch (e) {
+      debugPrint('[AppState] Firestore write failed: $e');
+    }
   }
 
   Future<void> endPinnedTaskToday(String taskId) async {
@@ -984,39 +1054,49 @@ class AppState extends ChangeNotifier {
       updatedAt: now,
     );
     notifyListeners();
-    await _firestore
-        .collection('users')
-        .doc(_user!.uid)
-        .collection('tasks')
-        .doc(taskId)
-        .update({
-          'isPinned': false,
-          'pinnedUntil': yesterday.toIso8601String(),
-          'updatedAt': now.toIso8601String(),
-        });
-  }
-
-  Future<void> toggleStar(String taskId) async {
-    if (_user == null) return;
-    final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
-    if (taskIndex != -1) {
-      _tasks[taskIndex].isStarred = !_tasks[taskIndex].isStarred;
-      debugPrint(
-        '[AppState] toggleStar: taskId=$taskId isStarred=${_tasks[taskIndex].isStarred}',
-      );
-      final now = DateTime.now();
-      _tasks[taskIndex] = _tasks[taskIndex].copyWith(updatedAt: now);
-      notifyListeners();
-
+    try {
       await _firestore
           .collection('users')
           .doc(_user!.uid)
           .collection('tasks')
           .doc(taskId)
           .update({
-            'isStarred': _tasks[taskIndex].isStarred,
+            'isPinned': false,
+            'pinnedUntil': yesterday.toIso8601String(),
             'updatedAt': now.toIso8601String(),
           });
+    } catch (e) {
+      debugPrint('[AppState] Firestore write failed: $e');
+    }
+  }
+
+  Future<void> toggleStar(String taskId) async {
+    if (_user == null) return;
+    final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
+    if (taskIndex != -1) {
+      final now = DateTime.now();
+      _tasks[taskIndex] = _tasks[taskIndex].copyWith(
+        isStarred: !_tasks[taskIndex].isStarred,
+        updatedAt: now,
+      );
+      debugPrint(
+        '[AppState] toggleStar: taskId=$taskId isStarred=${_tasks[taskIndex].isStarred}',
+      );
+      notifyListeners();
+
+      try {
+        await _firestore
+            .collection('users')
+            .doc(_user!.uid)
+            .collection('tasks')
+            .doc(taskId)
+            .update({
+              'isStarred': _tasks[taskIndex].isStarred,
+              'updatedAt': now.toIso8601String(),
+            });
+      } catch (e) {
+        debugPrint('[AppState] Firestore write failed: $e');
+      }
     }
   }
 
@@ -1035,13 +1115,17 @@ class AppState extends ChangeNotifier {
     for (final id in taskIds) {
       final index = _tasks.indexWhere((t) => t.id == id);
       if (index != -1) {
-        _tasks[index].isStarred = starred;
+        _tasks[index] = _tasks[index].copyWith(isStarred: starred);
         batch.update(userTasksRef.doc(id), {'isStarred': starred});
       }
     }
 
     notifyListeners();
-    await batch.commit();
+    try {
+      await batch.commit();
+    } catch (e) {
+      debugPrint('[AppState] Firestore write failed: $e');
+    }
   }
 
   Future<void> applyDailyPenalty() async {
@@ -1049,14 +1133,20 @@ class AppState extends ChangeNotifier {
     debugPrint(
       '[AppState] applyDailyPenalty: ${_skills.length} skills penalized',
     );
-    for (var skill in _skills) {
-      skill.applyDailyPenalty(0.1);
-      await _firestore
-          .collection('users')
-          .doc(_user!.uid)
-          .collection('skills')
-          .doc(skill.id)
-          .update({'xp': skill.xp});
+    for (var i = 0; i < _skills.length; i++) {
+      _skills[i] = _skills[i].copyWith(
+        xp: (_skills[i].xp - 0.1).clamp(0.0, double.infinity),
+      );
+      try {
+        await _firestore
+            .collection('users')
+            .doc(_user!.uid)
+            .collection('skills')
+            .doc(_skills[i].id)
+            .update({'xp': _skills[i].xp});
+      } catch (e) {
+        debugPrint('[AppState] Firestore write failed: $e');
+      }
     }
     notifyListeners();
   }

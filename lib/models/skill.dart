@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class Skill {
   final String id;
   final String name;
-  double xp;
+  final double xp;
   final Color color;
   final String icon; // emoji icon
 
@@ -58,16 +58,4 @@ class Skill {
   int get level => (xp / totalXpForCurrentLevel).floor() + 1;
   double get progressInLevel =>
       (xp % totalXpForCurrentLevel) / totalXpForCurrentLevel;
-
-  void addXp(double amount) {
-    xp += amount;
-    if (xp < 0) xp = 0;
-  }
-
-  void applyDailyPenalty(double amount) {
-    if (xp > 0) {
-      xp -= amount;
-      if (xp < 0) xp = 0;
-    }
-  }
 }

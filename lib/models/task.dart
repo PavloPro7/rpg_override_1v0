@@ -4,10 +4,10 @@ class Task {
   final String skillId;
   final DateTime date;
   final DateTime? time;
-  bool isCompleted;
-  bool isStarred;
-  bool isPinned;
-  List<String> completedDates;
+  final bool isCompleted;
+  final bool isStarred;
+  final bool isPinned;
+  final List<String> completedDates;
   final int difficulty;
   final DateTime? updatedAt;
   final DateTime? pinnedUntil;
@@ -88,7 +88,7 @@ class Task {
       isCompleted: isCompleted ?? this.isCompleted,
       isStarred: isStarred ?? this.isStarred,
       isPinned: isPinned ?? this.isPinned,
-      completedDates: completedDates ?? this.completedDates,
+      completedDates: completedDates ?? List<String>.from(this.completedDates),
       difficulty: difficulty ?? this.difficulty,
       updatedAt: updatedAt ?? this.updatedAt,
       pinnedUntil: pinnedUntil != null ? pinnedUntil() : this.pinnedUntil,
