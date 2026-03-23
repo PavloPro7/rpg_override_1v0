@@ -1,0 +1,9 @@
+﻿Analyzing rpg_override_1v0...                                   
+
+   info - Unnecessary use of multiple underscores - lib\screens\dashboard_screen.dart:66:27 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\home_screen.dart:225:26 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\profile_screen.dart:29:25 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\profile_screen.dart:268:57 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\settings_screen.dart:548:55 - unnecessary_underscores
+   info - Unnecessary use of multiple underscores - lib\screens\skills_screen.dart:97:33 - unnecessary_underscores
+

@@ -23,7 +23,10 @@ class ProfileScreen extends StatelessWidget {
               radius: 60,
               backgroundColor: colorScheme.primaryContainer,
               backgroundImage: appState.avatarUrl != null
-                  ? NetworkImage(appState.avatarUrl!)
+                  ? NetworkImage(appState.avatarUrl!, headers: const {})
+                  : null,
+              onBackgroundImageError: appState.avatarUrl != null
+                  ? (e, s) {}
                   : null,
               child: appState.avatarUrl == null
                   ? Icon(
@@ -262,6 +265,7 @@ class ProfileScreen extends StatelessWidget {
                           child: CircleAvatar(
                             radius: 28,
                             backgroundImage: NetworkImage(url),
+                            onBackgroundImageError: (e, s) {},
                             backgroundColor: Colors.transparent,
                           ),
                         ),

@@ -545,6 +545,7 @@ class SettingsScreen extends StatelessWidget {
                         child: CircleAvatar(
                           radius: 28,
                           backgroundImage: NetworkImage(url),
+                          onBackgroundImageError: (e, s) {},
                           backgroundColor: Colors.transparent,
                         ),
                       ),

@@ -222,6 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
           image: DecorationImage(
             image: NetworkImage(appState.avatarUrl!),
             fit: BoxFit.cover,
+            onError: (e, s) {},
           ),
         ),
       );
