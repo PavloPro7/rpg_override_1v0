@@ -334,7 +334,7 @@ class AppState extends ChangeNotifier {
       final userDoc = _firestore.collection('users').doc(_user!.uid);
 
       // Delete tasks collection
-      final tasks = await userDoc.collection('tasks').get();
+      final tasks = await userDoc.collection('tasks').getWithCacheFallback();
       for (final doc in tasks.docs) {
         await doc.reference.delete();
       }
@@ -365,7 +365,7 @@ class AppState extends ChangeNotifier {
       final userDoc = _firestore.collection('users').doc(_user!.uid);
 
       // Delete tasks collection
-      final tasks = await userDoc.collection('tasks').get();
+      final tasks = await userDoc.collection('tasks').getWithCacheFallback();
       for (final doc in tasks.docs) {
         await doc.reference.delete();
       }
@@ -475,7 +475,7 @@ class AppState extends ChangeNotifier {
     final userDoc = _firestore.collection('users').doc(_user!.uid);
 
     // Load user profile
-    final userSnapshot = await userDoc.get();
+    final userSnapshot = await userDoc.getWithCacheFallback();
     if (userSnapshot.exists) {
       final userData = userSnapshot.data();
       debugPrint('DEBUG: Loading profile for ${_user!.email}: $userData');
@@ -507,7 +507,7 @@ class AppState extends ChangeNotifier {
     }
 
     // Load skills
-    final skillsSnapshot = await userDoc.collection('skills').get();
+    final skillsSnapshot = await userDoc.collection('skills').getWithCacheFallback();
     if (skillsSnapshot.docs.isNotEmpty) {
       _skills = skillsSnapshot.docs
           .map((doc) => Skill.fromMap(doc.data()))
@@ -520,7 +520,7 @@ class AppState extends ChangeNotifier {
     }
 
     // Load tasks
-    final tasksSnapshot = await userDoc.collection('tasks').get();
+    final tasksSnapshot = await userDoc.collection('tasks').getWithCacheFallback();
     _tasks = tasksSnapshot.docs.map((doc) => Task.fromMap(doc.data())).toList();
 
     debugPrint(
@@ -1149,5 +1149,25 @@ class AppState extends ChangeNotifier {
       }
     }
     notifyListeners();
+  }
+}
+
+extension DocumentFallback<T> on DocumentReference<T> {
+  Future<DocumentSnapshot<T>> getWithCacheFallback() async {
+    try {
+      return await get();
+    } catch (e) {
+      return await get(const GetOptions(source: Source.cache));
+    }
+  }
+}
+
+extension QueryFallback<T> on Query<T> {
+  Future<QuerySnapshot<T>> getWithCacheFallback() async {
+    try {
+      return await get();
+    } catch (e) {
+      return await get(const GetOptions(source: Source.cache));
+    }
   }
 }

@@ -311,7 +311,6 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                       Duration(days: settledPage - _initialPage),
                     );
                     if (!DateUtils.isSameDay(newDate, _selectedDate)) {
-                      debugPrint('Swiping: Date changed to $newDate (page: $settledPage)');
                       setState(() {
                         _selectedDate = newDate;
                         _isStarredView = false;
@@ -323,7 +322,6 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                   if (notification is ScrollUpdateNotification) {
                     final page = _pageController.page;
                     if (page != null) {
-                      debugPrint('Swiping: ScrollUpdateNotification (page: $page, dragging: ${notification.dragDetails != null})');
                       if (notification.dragDetails == null) {
                         final settled = page.round();
                         if ((page - settled).abs() < 0.1) {
@@ -334,7 +332,6 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                   } else if (notification is ScrollEndNotification) {
                     final settled =
                         _pageController.page?.round() ?? _initialPage;
-                    debugPrint('Swiping: ScrollEndNotification (settled page: $settled)');
                     checkAndSnap(settled);
                   }
                   return false;
