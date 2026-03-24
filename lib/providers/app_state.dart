@@ -362,26 +362,37 @@ class AppState extends ChangeNotifier {
     if (_user == null) return;
     debugPrint('[AppState] deleteAccount: uid=${_user!.uid}');
     try {
-      final userDoc = _firestore.collection('users').doc(_user!.uid);
+      final uid = _user!.uid;
+      final userDoc = _firestore.collection('users').doc(uid);
 
-      // Delete tasks collection
+      // 1. Delete Firebase Auth account FIRST (requires recent login)
+      await _user!.delete();
+
+      // 2. Delete Firestore data after auth deletion succeeds
       final tasks = await userDoc.collection('tasks').getWithCacheFallback();
       for (final doc in tasks.docs) {
         await doc.reference.delete();
       }
 
-      // Delete user document
+      final skills = await userDoc.collection('skills').getWithCacheFallback();
+      for (final doc in skills.docs) {
+        await doc.reference.delete();
+      }
+
       await userDoc.delete();
 
-      // Attempt auth account deletion
-      final currentUser = _user; // save ref before signOut clears it
-      await signOut(); // This clears local state
-
-      // Firebase auth deletion requires recent authentication.
-      // This may throw a 'requires-recent-login' exception if the session is too old.
-      await currentUser?.delete();
+      // 3. Sign out last — this triggers the authStateChanges listener
+      //    which clears local state and navigates to LoginScreen
+      await _auth.signOut();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        debugPrint('[AppState] deleteAccount: requires re-authentication');
+        rethrow; // UI should handle re-auth flow
+      }
+      debugPrint('[AppState] deleteAccount error: $e');
+      rethrow;
     } catch (e) {
-      debugPrint('Error deleting account: $e');
+      debugPrint('[AppState] deleteAccount error: $e');
       rethrow;
     }
   }

@@ -188,28 +188,33 @@ class SettingsScreen extends StatelessWidget {
   void _showDeleteConfirmDialog(BuildContext context, AppState appState) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Account?'),
         content: const Text(
           'Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () async {
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Close settings screen
+              Navigator.pop(dialogContext); // Close dialog only
               try {
                 await appState.deleteAccount();
+                // signOut inside deleteAccount triggers authStateChanges,
+                // which rebuilds the app to LoginScreen automatically.
+                // No need for Navigator.pop here.
               } catch (e) {
                 if (context.mounted) {
+                  final message = e.toString().contains('requires-recent-login')
+                      ? 'Please sign out and sign back in, then try deleting again.'
+                      : 'Failed to delete account: $e';
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Failed to delete account: $e'),
+                      content: Text(message),
                       backgroundColor: Colors.red,
                     ),
                   );
