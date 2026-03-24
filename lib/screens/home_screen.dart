@@ -18,7 +18,16 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  int _previousIndex = 0;
   Timer? _verificationTimer;
+
+  static const Map<int, int> _tabVisualPosition = {
+    0: 0, // Stats - leftmost
+    1: 1, // Skills
+    2: 2, // Quests
+    4: 3, // Config
+    3: 4, // Profile - rightmost
+  };
   DateTime? _targetDateForTasks;
   bool _cameFromDashboard = false;
   final GlobalKey<TodayTasksScreenState> _taskListKey =
@@ -51,16 +60,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Widget> get _pages => [
     DashboardScreen(
-      onProfileTap: () => setState(() => _selectedIndex = 3),
+      onProfileTap: () => setState(() {
+        _previousIndex = _selectedIndex;
+        _selectedIndex = 3;
+      }),
       onDateSelected: (date) {
         setState(() {
           _targetDateForTasks = date;
           _cameFromDashboard = true;
+          _previousIndex = _selectedIndex;
           _selectedIndex = 2; // Tasks view
         });
       },
     ),
-    SkillsScreen(onProfileTap: () => setState(() => _selectedIndex = 3)),
+    SkillsScreen(onProfileTap: () => setState(() {
+      _previousIndex = _selectedIndex;
+      _selectedIndex = 3;
+    })),
     TodayTasksScreen(
       key: _taskListKey,
       initialDate: _targetDateForTasks,
@@ -68,15 +84,18 @@ class _HomeScreenState extends State<HomeScreen> {
       onBackTap: () {
         setState(() {
           _cameFromDashboard = false;
+          _previousIndex = _selectedIndex;
           _selectedIndex = 0; // Dashboard view
         });
       },
       onProfileTap: () => setState(() {
         _cameFromDashboard = false;
+        _previousIndex = _selectedIndex;
         _selectedIndex = 3;
       }),
       onSettingsTap: () => setState(() {
         _cameFromDashboard = false;
+        _previousIndex = _selectedIndex;
         _selectedIndex = 4;
       }),
     ),
@@ -93,7 +112,33 @@ class _HomeScreenState extends State<HomeScreen> {
       extendBody: true,
       body: Stack(
         children: [
-          _pages[_selectedIndex],
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            switchInCurve: Curves.easeInOut,
+            switchOutCurve: Curves.easeInOut,
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              final currentVisual = _tabVisualPosition[_selectedIndex] ?? 0;
+              final previousVisual = _tabVisualPosition[_previousIndex] ?? 0;
+              final goingRight = currentVisual > previousVisual;
+
+              final isNewChild = child.key == ValueKey(_selectedIndex);
+              final offset = Tween<Offset>(
+                begin: Offset(
+                  isNewChild
+                      ? (goingRight ? 1.0 : -1.0)
+                      : (goingRight ? -1.0 : 1.0),
+                  0.0,
+                ),
+                end: Offset.zero,
+              ).animate(animation);
+
+              return SlideTransition(position: offset, child: child);
+            },
+            child: KeyedSubtree(
+              key: ValueKey(_selectedIndex),
+              child: _pages[_selectedIndex],
+            ),
+          ),
           // Gradient shadow (Moved from nav bar to body to avoid pushing FAB too high)
           Align(
             alignment: Alignment.bottomCenter,
@@ -258,6 +303,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () {
             setState(() {
               _cameFromDashboard = false;
+              _previousIndex = _selectedIndex;
               _selectedIndex = index;
             });
           },
