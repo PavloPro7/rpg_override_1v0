@@ -120,109 +120,108 @@ class _LevelUpBannerState extends State<LevelUpBanner>
       child: SlideTransition(
         position: _slideAnimation,
         child: IgnorePointer(
-          child: Container(
-            margin: EdgeInsets.fromLTRB(16, topPadding + 8, 16, 0),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: isDark
-                    ? [
-                        const Color(0xFF2A2340),
-                        const Color(0xFF1E1E2E),
-                      ]
-                    : [
-                        const Color(0xFFFFF8E7),
-                        const Color(0xFFFFF0C0),
-                      ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: widget.skillColor, width: 1),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x40FFD700),
-                  blurRadius: 12,
-                  spreadRadius: 0,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Text(
-                  widget.skillEmoji,
-                  style: const TextStyle(fontSize: 28),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Level ${widget.newLevel}!',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: goldColor,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.auto_awesome,
-                            size: 16,
-                            color: goldColor,
-                          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: Container(
+              margin: EdgeInsets.fromLTRB(16, topPadding + 8, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: isDark
+                      ? [
+                          Color.lerp(Theme.of(context).colorScheme.surface, widget.skillColor, 0.2) ?? Theme.of(context).colorScheme.surface,
+                          Theme.of(context).colorScheme.surface,
+                        ]
+                      : [
+                          Color.lerp(Theme.of(context).colorScheme.surface, widget.skillColor, 0.1) ?? Theme.of(context).colorScheme.surface,
+                          Theme.of(context).colorScheme.surface,
                         ],
-                      ),
-                      Text(
-                        widget.skillName,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: AnimatedBuilder(
-                    animation: _ringAnimation,
-                    builder: (context, _) {
-                      return CustomPaint(
-                        painter: _RingPainter(
-                          progress: _ringAnimation.value,
-                          color: widget.skillColor,
-                          backgroundColor: Theme.of(context)
-                              .colorScheme
-                              .surfaceVariant,
-                          strokeWidth: 3,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${widget.newLevel}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: widget.skillColor.withOpacity(0.5), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.skillColor.withOpacity(isDark ? 0.4 : 0.2),
+                    blurRadius: 16,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    widget.skillEmoji,
+                    style: const TextStyle(fontSize: 28),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Level ${widget.newLevel}!',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: goldColor,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.auto_awesome,
+                              size: 16,
                               color: goldColor,
                             ),
+                          ],
+                        ),
+                        Text(
+                          widget.skillName,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      );
-                    },
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: AnimatedBuilder(
+                      animation: _ringAnimation,
+                      builder: (context, _) {
+                        return CustomPaint(
+                          painter: _RingPainter(
+                            progress: _ringAnimation.value,
+                            color: widget.skillColor,
+                            backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                            strokeWidth: 4,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${widget.newLevel}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: goldColor,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
