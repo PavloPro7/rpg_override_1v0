@@ -10,6 +10,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/skill.dart';
 import '../models/task.dart';
 
+class LevelUpInfo {
+  final int newLevel;
+  final String skillName;
+  final String skillEmoji;
+  final Color skillColor;
+  final double newProgress;
+
+  LevelUpInfo({
+    required this.newLevel,
+    required this.skillName,
+    required this.skillEmoji,
+    required this.skillColor,
+    required this.newProgress,
+  });
+}
+
 class AppState extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -29,6 +45,7 @@ class AppState extends ChangeNotifier {
   String? _defaultSkillId;
 
   bool _isProfileLoaded = false;
+  LevelUpInfo? _pendingLevelUp;
 
   AppState() {
     _loadPreferences();
@@ -107,6 +124,11 @@ class AppState extends ChangeNotifier {
   bool get isOnboarded =>
       (_userName != null && _userName!.isNotEmpty && _userName != 'Hero') &&
       (_userAge != null && _userAge! > 0);
+
+  LevelUpInfo? get pendingLevelUp => _pendingLevelUp;
+  void clearPendingLevelUp() {
+    _pendingLevelUp = null;
+  }
 
   Future<void> reloadUser() async {
     await _user?.reload();
@@ -847,9 +869,20 @@ class AppState extends ChangeNotifier {
       } else {
         newDates.add(dateStr);
         if (skillIndex != -1) {
+          final oldLevel = _skills[skillIndex].level;
           _skills[skillIndex] = _skills[skillIndex].copyWith(
             xp: _skills[skillIndex].xp + xpAmount,
           );
+          final newLevel = _skills[skillIndex].level;
+          if (newLevel > oldLevel) {
+            _pendingLevelUp = LevelUpInfo(
+              newLevel: newLevel,
+              skillName: _skills[skillIndex].name,
+              skillEmoji: _skills[skillIndex].icon,
+              skillColor: _skills[skillIndex].color,
+              newProgress: _skills[skillIndex].progressInLevel,
+            );
+          }
         }
         debugPrint(
           '[AppState] completeTask: skill pinned → completed date=$dateStr xp=+$xpAmount',
@@ -895,9 +928,20 @@ class AppState extends ChangeNotifier {
 
       if (skillIndex != -1) {
         if (newCompleted) {
+          final oldLevel = _skills[skillIndex].level;
           _skills[skillIndex] = _skills[skillIndex].copyWith(
             xp: _skills[skillIndex].xp + xpAmount,
           );
+          final newLevel = _skills[skillIndex].level;
+          if (newLevel > oldLevel) {
+            _pendingLevelUp = LevelUpInfo(
+              newLevel: newLevel,
+              skillName: _skills[skillIndex].name,
+              skillEmoji: _skills[skillIndex].icon,
+              skillColor: _skills[skillIndex].color,
+              newProgress: _skills[skillIndex].progressInLevel,
+            );
+          }
           debugPrint(
             '[AppState] completeTask: skill regular → completed xp=+$xpAmount',
           );

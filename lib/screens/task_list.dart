@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import 'dart:ui';
 import '../widgets/app_calendar.dart';
+import '../widgets/level_up_banner.dart';
 import '../providers/app_state.dart';
 import '../models/task.dart';
 
@@ -655,6 +656,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                             onPressed: _isSelectionMode
                               ? null
                               : () async {
+                                  final overlay = Overlay.of(context);
                                   if (!isDone) {
                                     setState(
                                       () => _animatingTaskIds.add(task.id),
@@ -673,10 +675,23 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                                     );
                                   }
                                   if (mounted) {
-                                    appState.completeTask(
+                                    await appState.completeTask(
                                       task.id,
                                       onDate: pageDate,
                                     );
+                                    if (appState.pendingLevelUp != null &&
+                                        mounted) {
+                                      final info = appState.pendingLevelUp!;
+                                      appState.clearPendingLevelUp();
+                                      LevelUpBanner.show(
+                                        overlay,
+                                        newLevel: info.newLevel,
+                                        skillName: info.skillName,
+                                        skillEmoji: info.skillEmoji,
+                                        skillColor: info.skillColor,
+                                        newProgress: info.newProgress,
+                                      );
+                                    }
                                     // Clear animation state after the
                                     // current frame renders so the task
                                     // has already left activeTasks before
