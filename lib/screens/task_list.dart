@@ -53,7 +53,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
         ? DateUtils.dateOnly(widget.initialDate!)
         : _baseDate;
     _timelineFocusDate = _selectedDate;
-    final diff = _selectedDate.difference(_baseDate).inDays;
+    final diff = _daysDifference(_selectedDate, _baseDate);
     _pageController = PageController(initialPage: _initialPage + diff);
     WidgetsBinding.instance.addPostFrameCallback((_) => _centerSelectedDate());
   }
@@ -78,6 +78,21 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
     super.dispose();
   }
 
+  /// Adds calendar days safely, avoiding DST issues.
+  /// Uses noon as anchor so ±1h DST shift stays in the same calendar day.
+  DateTime _addCalendarDays(DateTime date, int days) {
+    final noon = DateTime(date.year, date.month, date.day, 12)
+        .add(Duration(days: days));
+    return DateTime(noon.year, noon.month, noon.day);
+  }
+
+  /// Safe difference in calendar days between two dates, avoiding DST issues.
+  int _daysDifference(DateTime a, DateTime b) {
+    final aNorm = DateTime(a.year, a.month, a.day);
+    final bNorm = DateTime(b.year, b.month, b.day);
+    return (aNorm.difference(bNorm).inHours / 24).round();
+  }
+
   @override
   void didUpdateWidget(TodayTasksScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -90,7 +105,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
           _selectedDate = newDate;
           _isStarredView = false;
         });
-        final diff = _selectedDate.difference(_baseDate).inDays;
+        final diff = _daysDifference(_selectedDate, _baseDate);
 
         // Jump the page controller instantly
         if (_pageController.hasClients) {
@@ -115,7 +130,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
     final itemWidth = (screenWidth - 32) / 7;
     final parkOffset = 14 * itemWidth;
 
-    final diffDays = _selectedDate.difference(_timelineFocusDate).inDays;
+    final diffDays = _daysDifference(_selectedDate, _timelineFocusDate);
     if (diffDays == 0) {
       if ((_dateScrollController.offset - parkOffset).abs() > 1.0) {
         _dateScrollController.jumpTo(parkOffset);
@@ -258,9 +273,10 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                         context,
                       );
                       if (picked != null && picked != _selectedDate) {
-                        final diff = DateUtils.dateOnly(
-                          picked,
-                        ).difference(_baseDate).inDays;
+                        final diff = _daysDifference(
+                          DateUtils.dateOnly(picked),
+                          _baseDate,
+                        );
                         _pageController.jumpToPage(_initialPage + diff);
                         setState(() {
                           _selectedDate = DateUtils.dateOnly(picked);
@@ -308,8 +324,9 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                   void checkAndSnap(int settledPage) {
                     if (_isAnimatingToPage) return;
 
-                    final newDate = _baseDate.add(
-                      Duration(days: settledPage - _initialPage),
+                    final newDate = _addCalendarDays(
+                      _baseDate,
+                      settledPage - _initialPage,
                     );
                     if (!DateUtils.isSameDay(newDate, _selectedDate)) {
                       setState(() {
@@ -340,8 +357,9 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                 child: PageView.builder(
                   controller: _pageController,
                   itemBuilder: (context, index) {
-                    final pageDate = _baseDate.add(
-                      Duration(days: index - _initialPage),
+                    final pageDate = _addCalendarDays(
+                      _baseDate,
+                      index - _initialPage,
                     );
                     final pageTasks = _isStarredView
                         ? appState.tasks.where((t) => t.isStarred).toList()
@@ -382,7 +400,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
     // We generate 35 items so the scroll container has physically 14 items
     // to the left and 14 items to the right to animate through smoothly!
     final dates = List.generate(35, (index) {
-      return _timelineFocusDate.add(Duration(days: index - 17));
+      return _addCalendarDays(_timelineFocusDate, index - 17);
     });
 
     return Container(
@@ -400,7 +418,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
             width: itemWidth,
             child: InkWell(
               onTap: () async {
-                final diff = date.difference(_baseDate).inDays;
+                final diff = _daysDifference(date, _baseDate);
                 final targetPage = _initialPage + diff;
 
                 if (_pageController.page?.round() == targetPage) return;
@@ -423,7 +441,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                 animation: _pageController,
                 builder: (context, child) {
                   final selectedPageNum =
-                      _initialPage + _selectedDate.difference(_baseDate).inDays;
+                      _initialPage + _daysDifference(_selectedDate, _baseDate);
                   double page = selectedPageNum.toDouble();
 
                   if (_pageController.hasClients &&
@@ -431,7 +449,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                     page = _pageController.page ?? page;
                   }
 
-                  final datePageNum = _initialPage + date.difference(_baseDate).inDays;
+                  final datePageNum = _initialPage + _daysDifference(date, _baseDate);
                   final distance = (page - datePageNum).abs();
                   final double colorT = _isStarredView ? 0.0 : (1.0 - distance).clamp(0.0, 1.0);
                   
@@ -506,7 +524,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
   String _getTimeLabel(DateTime dateTime) {
     final now = DateTime.now();
     final today = DateUtils.dateOnly(now);
-    final tomorrow = today.add(const Duration(days: 1));
+    final tomorrow = _addCalendarDays(today, 1);
     final date = DateUtils.dateOnly(dateTime);
 
     if (DateUtils.isSameDay(date, today)) {
@@ -878,7 +896,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
 
     void shiftAll(int days) {
       for (final task in movableTasks) {
-        appState.updateTaskDate(task.id, task.date.add(Duration(days: days)));
+        appState.updateTaskDate(task.id, _addCalendarDays(task.date, days));
       }
       if (singleTask == null) setState(() => _selectedTaskIds.clear());
       Navigator.pop(context);
