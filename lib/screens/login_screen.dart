@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/app_state.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -295,6 +296,37 @@ class _LoginScreenState extends State<LoginScreen> {
                               autofillHints: [AutofillHints.newPassword],
                               textInputAction: TextInputAction.done,
                               onSubmitted: (_) => _submit(),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Wrap(
+                                alignment: WrapAlignment.center,
+                                children: [
+                                  Text(
+                                    'By registering, you agree to our ',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () async {
+                                      final uri = Uri.parse('https://pavlopro7.github.io/rpg-tasks-privacy/');
+                                      if (await canLaunchUrl(uri)) {
+                                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                      }
+                                    },
+                                    child: Text(
+                                      'Privacy Policy',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(context).colorScheme.primary,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                           const SizedBox(height: 16),

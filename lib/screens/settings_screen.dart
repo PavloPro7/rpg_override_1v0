@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/app_state.dart';
 import '../utils/skill_dialog_utils.dart';
 
@@ -133,6 +134,19 @@ class SettingsScreen extends StatelessWidget {
             
             // Account Management Box
             _buildSectionCard(context, 'Account Management', [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.privacy_tip_outlined),
+                title: const Text('Privacy Policy'),
+                trailing: const Icon(Icons.open_in_new, size: 18),
+                onTap: () async {
+                  final uri = Uri.parse('https://pavlopro7.github.io/rpg-tasks-privacy//');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+              ),
+              const Divider(height: 32),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(
