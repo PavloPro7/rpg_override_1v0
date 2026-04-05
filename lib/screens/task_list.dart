@@ -1080,9 +1080,10 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
           child: AlertDialog(
             icon: const Icon(Icons.auto_awesome),
             title: Text(taskToEdit == null ? 'Accept New Quest' : 'Edit Quest'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                 TextField(
                   autofocus: true,
                   controller: titleController,
@@ -1264,6 +1265,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                 ),
               ],
             ),
+          ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
