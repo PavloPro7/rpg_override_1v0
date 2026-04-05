@@ -1081,6 +1081,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
             icon: const Icon(Icons.auto_awesome),
             title: Text(taskToEdit == null ? 'Accept New Quest' : 'Edit Quest'),
             content: SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 8),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [

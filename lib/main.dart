@@ -77,7 +77,7 @@ class MyApp extends StatelessWidget {
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           shape: CircleBorder(),
         ),
-        textTheme: GoogleFonts.interTextTheme(
+        textTheme: GoogleFonts.robotoTextTheme(
           ThemeData.dark().textTheme.apply(
             bodyColor: Colors.white,
             displayColor: Colors.white,
