@@ -26,7 +26,7 @@ class AppCalendar extends StatelessWidget {
       focusedDay: focusedDay,
       selectedDayPredicate: (day) => isSameDay(selectedDay, day),
       onDaySelected: onDaySelected,
-      availableGestures: AvailableGestures.none,
+      availableGestures: AvailableGestures.horizontalSwipe,
       calendarFormat: CalendarFormat.month,
       startingDayOfWeek: StartingDayOfWeek.monday,
       headerStyle: HeaderStyle(
