@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/skill.dart';
 import '../models/task.dart';
+import '../services/notification_service.dart';
 
 class LevelUpInfo {
   final int newLevel;
@@ -98,6 +99,10 @@ class AppState extends ChangeNotifier {
     _defaultSkillId = skillId;
     notifyListeners();
     _savePreferences();
+  }
+
+  Future<void> _rescheduleNotifications() async {
+    await NotificationService().rescheduleAll(_tasks);
   }
 
   Future<void> _loadPreferences() async {
@@ -564,6 +569,7 @@ class AppState extends ChangeNotifier {
     }
     _isProfileLoaded = true;
     notifyListeners();
+    _rescheduleNotifications();
   }
 
   Future<void> addTask(
@@ -590,6 +596,7 @@ class AppState extends ChangeNotifier {
     );
     _tasks.add(newTask);
     notifyListeners();
+    _rescheduleNotifications();
 
     try {
       await _firestore
@@ -636,6 +643,7 @@ class AppState extends ChangeNotifier {
 
     _tasks[taskIndex] = updatedTask;
     notifyListeners();
+    _rescheduleNotifications();
 
     try {
       await _firestore
@@ -656,6 +664,7 @@ class AppState extends ChangeNotifier {
     // Update local state
     _tasks.removeWhere((t) => taskIds.contains(t.id));
     notifyListeners();
+    _rescheduleNotifications();
 
     // Update Firestore in batch
     final batch = _firestore.batch();
@@ -688,6 +697,7 @@ class AppState extends ChangeNotifier {
         updatedAt: now,
       );
       notifyListeners();
+      _rescheduleNotifications();
 
       try {
         await _firestore
@@ -809,6 +819,7 @@ class AppState extends ChangeNotifier {
           updatedAt: now,
         );
         notifyListeners();
+        _rescheduleNotifications();
         try {
           await _firestore
               .collection('users')
@@ -832,6 +843,7 @@ class AppState extends ChangeNotifier {
           updatedAt: now,
         );
         notifyListeners();
+        _rescheduleNotifications();
         try {
           await _firestore
               .collection('users')
@@ -894,6 +906,7 @@ class AppState extends ChangeNotifier {
         updatedAt: now,
       );
       notifyListeners();
+      _rescheduleNotifications();
 
       try {
         await _firestore
@@ -960,6 +973,7 @@ class AppState extends ChangeNotifier {
         updatedAt: now,
       );
       notifyListeners();
+      _rescheduleNotifications();
 
       if (skillIndex != -1) {
         try {
