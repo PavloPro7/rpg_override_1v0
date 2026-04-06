@@ -578,6 +578,7 @@ class AppState extends ChangeNotifier {
     DateTime? date,
     DateTime? time,
     int difficulty = 1,
+    bool isPinned = false,
   }) async {
     if (_user == null) return;
     debugPrint(
@@ -591,7 +592,7 @@ class AppState extends ChangeNotifier {
       time: time,
       difficulty: difficulty,
       isStarred: false,
-      isPinned: false,
+      isPinned: isPinned,
       updatedAt: DateTime.now(),
     );
     _tasks.add(newTask);
@@ -618,6 +619,7 @@ class AppState extends ChangeNotifier {
     DateTime? time,
     bool clearTime = false,
     int? difficulty,
+    bool? isPinned,
   }) async {
     if (_user == null) return;
     debugPrint(
@@ -636,9 +638,11 @@ class AppState extends ChangeNotifier {
       difficulty: difficulty ?? existingTask.difficulty,
       isCompleted: existingTask.isCompleted,
       isStarred: existingTask.isStarred,
-      isPinned: existingTask.isPinned,
+      isPinned: isPinned ?? existingTask.isPinned,
       completedDates: existingTask.completedDates,
       updatedAt: DateTime.now(),
+      pinnedUntil: existingTask.pinnedUntil,
+      notifyEnabled: existingTask.notifyEnabled,
     );
 
     _tasks[taskIndex] = updatedTask;

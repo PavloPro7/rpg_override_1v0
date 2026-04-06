@@ -1055,10 +1055,11 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
         : null;
     bool timeWasCleared = false;
     int selectedDifficulty = taskToEdit?.difficulty ?? 1;
+    bool selectedPinned = taskToEdit?.isPinned ?? false;
 
     bool isSubmitting = false;
 
-    void submitQuest() {
+    void submitQuest() async {
       if (isSubmitting) return;
       isSubmitting = true;
       if (selectedSkillId != null) {
@@ -1081,15 +1082,18 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
             : null;
 
         if (taskToEdit == null) {
-          appState.addTask(
+          // Creating new task
+          await appState.addTask(
             taskTitle,
             selectedSkillId!,
             date: _selectedDate,
             time: taskTime,
             difficulty: selectedDifficulty,
+            isPinned: selectedPinned,
           );
         } else {
-          appState.updateTaskContent(
+          // Editing existing task
+          await appState.updateTaskContent(
             taskToEdit.id,
             taskTitle,
             selectedSkillId!,
@@ -1097,9 +1101,49 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
             time: taskTime,
             clearTime: timeWasCleared,
             difficulty: selectedDifficulty,
+            isPinned: selectedPinned,
           );
         }
+        
         Navigator.pop(context);
+
+        // If pinned, ask about notifications
+        if (selectedPinned && mounted) {
+          // Only ask if task wasn't already pinned, or if editing and pinning was just enabled
+          final wasPreviouslyPinned = taskToEdit?.isPinned ?? false;
+          if (!wasPreviouslyPinned) {
+            final notify = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                icon: const Icon(Icons.push_pin),
+                title: const Text('Pin Task'),
+                content: const Text(
+                    'Would you like to receive daily reminders for this pinned task?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('No thanks'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Yes, remind me'),
+                  ),
+                ],
+              ),
+            );
+            if (notify == true) {
+              // Find the task that was just created/updated and enable notifications
+              final taskId = taskToEdit?.id ??
+                  appState.tasks.lastWhere((t) => t.title == taskTitle).id;
+              appState.updateTaskNotify(taskId, true);
+            }
+          }
+        }
+        
+        // If unpinned from dialog, clear notifyEnabled
+        if (!selectedPinned && (taskToEdit?.isPinned ?? false)) {
+          appState.updateTaskNotify(taskToEdit!.id, false);
+        }
       } else {
         isSubmitting = false;
       }
@@ -1308,6 +1352,36 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                         tooltip: 'Clear time',
                       ),
                     ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          setDialogState(() {
+                            selectedPinned = !selectedPinned;
+                          });
+                        },
+                        icon: Icon(
+                          selectedPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                          size: 18,
+                          color: selectedPinned ? Theme.of(context).colorScheme.primary : null,
+                        ),
+                        label: Text(
+                          selectedPinned ? 'Pinned (repeats daily)' : 'Pin Task (Optional)',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: selectedPinned
+                              ? BorderSide(color: Theme.of(context).colorScheme.primary)
+                              : null,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],

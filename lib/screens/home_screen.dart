@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../widgets/verification_dialog.dart';
@@ -20,6 +21,16 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   int _previousIndex = 0;
   Timer? _verificationTimer;
+  final List<int> _tabHistory = [];
+
+  void _navigateToTab(int index) {
+    if (index == _selectedIndex) return;
+    setState(() {
+      _tabHistory.add(_selectedIndex); // push current to history
+      _previousIndex = _selectedIndex; // keep animation direction tracking
+      _selectedIndex = index;
+    });
+  }
 
   static const Map<int, int> _tabVisualPosition = {
     0: 0, // Stats - leftmost
@@ -60,23 +71,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List<Widget> get _pages => [
     DashboardScreen(
-      onProfileTap: () => setState(() {
-        _previousIndex = _selectedIndex;
-        _selectedIndex = 3;
-      }),
+      onProfileTap: () => _navigateToTab(3),
       onDateSelected: (date) {
         setState(() {
           _targetDateForTasks = date;
           _cameFromDashboard = true;
-          _previousIndex = _selectedIndex;
-          _selectedIndex = 2; // Tasks view
         });
+        _navigateToTab(2); // Tasks view
       },
     ),
-    SkillsScreen(onProfileTap: () => setState(() {
-      _previousIndex = _selectedIndex;
-      _selectedIndex = 3;
-    })),
+    SkillsScreen(onProfileTap: () => _navigateToTab(3)),
     TodayTasksScreen(
       key: _taskListKey,
       initialDate: _targetDateForTasks,
@@ -84,20 +88,19 @@ class _HomeScreenState extends State<HomeScreen> {
       onBackTap: () {
         setState(() {
           _cameFromDashboard = false;
+          _tabHistory.clear(); // reset history — we're going to root
           _previousIndex = _selectedIndex;
           _selectedIndex = 0; // Dashboard view
         });
       },
-      onProfileTap: () => setState(() {
-        _cameFromDashboard = false;
-        _previousIndex = _selectedIndex;
-        _selectedIndex = 3;
-      }),
-      onSettingsTap: () => setState(() {
-        _cameFromDashboard = false;
-        _previousIndex = _selectedIndex;
-        _selectedIndex = 4;
-      }),
+      onProfileTap: () {
+        setState(() => _cameFromDashboard = false);
+        _navigateToTab(3);
+      },
+      onSettingsTap: () {
+        setState(() => _cameFromDashboard = false);
+        _navigateToTab(4);
+      },
     ),
     const ProfileScreen(),
     const SettingsScreen(),
@@ -108,7 +111,21 @@ class _HomeScreenState extends State<HomeScreen> {
     final appState = context.watch<AppState>();
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false, // we handle it manually
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_tabHistory.isNotEmpty) {
+          setState(() {
+            _previousIndex = _selectedIndex;
+            _selectedIndex = _tabHistory.removeLast();
+          });
+        } else {
+          // Stack is empty — we're at root, exit the app
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
       extendBody: true,
       body: Stack(
         children: [
@@ -182,6 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    ),
     );
   }
 
@@ -303,9 +321,8 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: () {
             setState(() {
               _cameFromDashboard = false;
-              _previousIndex = _selectedIndex;
-              _selectedIndex = index;
             });
+            _navigateToTab(index);
           },
           borderRadius: BorderRadius.circular(100),
           child: AnimatedContainer(
