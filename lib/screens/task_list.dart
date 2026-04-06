@@ -190,16 +190,46 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                     Icons.push_pin_outlined,
                     color: Colors.white,
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     final selectedTasks = appState.tasks.where(
                       (t) => _selectedTaskIds.contains(t.id),
                     );
                     final allPinned = selectedTasks.every((t) => t.isPinned);
-                    appState.togglePinTasks(
-                      _selectedTaskIds.toList(),
-                      !allPinned,
-                    );
-                    setState(() => _selectedTaskIds.clear());
+                    if (allPinned) {
+                      appState.togglePinTasks(
+                        _selectedTaskIds.toList(),
+                        false,
+                        notifyEnabled: false,
+                      );
+                      setState(() => _selectedTaskIds.clear());
+                    } else {
+                      final taskIds = _selectedTaskIds.toList();
+                      setState(() => _selectedTaskIds.clear());
+                      final notify = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          icon: const Icon(Icons.push_pin),
+                          title: const Text('Pin Task'),
+                          content: const Text(
+                              'Would you like to receive daily reminders for this pinned task?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('No thanks'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Yes, remind me'),
+                            ),
+                          ],
+                        ),
+                      );
+                      appState.togglePinTasks(
+                        taskIds,
+                        true,
+                        notifyEnabled: notify ?? false,
+                      );
+                    }
                   },
                   tooltip: 'Toggle Pin',
                 ),
@@ -853,6 +883,22 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
         title: const Text('Pinned Task'),
         content: const Text('What do you want to do with this task?'),
         actions: [
+          if (task.notifyEnabled)
+            TextButton(
+              onPressed: () {
+                appState.updateTaskNotify(task.id, false);
+                Navigator.pop(ctx);
+              },
+              child: const Text('Disable reminders'),
+            )
+          else
+            TextButton(
+              onPressed: () {
+                appState.updateTaskNotify(task.id, true);
+                Navigator.pop(ctx);
+              },
+              child: const Text('Enable reminders'),
+            ),
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancel'),

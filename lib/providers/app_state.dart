@@ -1019,6 +1019,7 @@ class AppState extends ChangeNotifier {
       date: wasUnpinned ? today : _tasks[taskIndex].date,
       updatedAt: now,
       pinnedUntil: wasUnpinned ? () => null : null,
+      notifyEnabled: wasUnpinned ? _tasks[taskIndex].notifyEnabled : false,
     );
     notifyListeners();
     try {
@@ -1032,6 +1033,7 @@ class AppState extends ChangeNotifier {
             'date': _tasks[taskIndex].date.toIso8601String(),
             'updatedAt': now.toIso8601String(),
             if (wasUnpinned) 'pinnedUntil': null,
+            if (!wasUnpinned) 'notifyEnabled': false,
           });
     } catch (e) {
       debugPrint('[AppState] Firestore write failed: $e');
@@ -1049,6 +1051,7 @@ class AppState extends ChangeNotifier {
       isPinned: false,
       date: today,
       updatedAt: now,
+      notifyEnabled: false,
     );
     notifyListeners();
     try {
@@ -1061,13 +1064,14 @@ class AppState extends ChangeNotifier {
             'isPinned': false,
             'date': today.toIso8601String(),
             'updatedAt': now.toIso8601String(),
+            'notifyEnabled': false,
           });
     } catch (e) {
       debugPrint('[AppState] Firestore write failed: $e');
     }
   }
 
-  Future<void> togglePinTasks(List<String> taskIds, bool pinned) async {
+  Future<void> togglePinTasks(List<String> taskIds, bool pinned, {bool notifyEnabled = false}) async {
     if (_user == null) return;
     debugPrint(
       '[AppState] togglePinTasks: ${taskIds.length} tasks pinned=$pinned',
@@ -1089,12 +1093,14 @@ class AppState extends ChangeNotifier {
           date: pinned ? today : _tasks[index].date,
           updatedAt: now,
           pinnedUntil: pinned ? () => null : null,
+          notifyEnabled: pinned ? notifyEnabled : false,
         );
         batch.update(userTasksRef.doc(id), {
           'isPinned': pinned,
           'date': _tasks[index].date.toIso8601String(),
           'updatedAt': now.toIso8601String(),
           if (pinned) 'pinnedUntil': null,
+          'notifyEnabled': pinned ? notifyEnabled : false,
         });
       }
     }
@@ -1121,6 +1127,7 @@ class AppState extends ChangeNotifier {
       isPinned: false,
       pinnedUntil: () => yesterday,
       updatedAt: now,
+      notifyEnabled: false,
     );
     notifyListeners();
     try {
@@ -1133,6 +1140,34 @@ class AppState extends ChangeNotifier {
             'isPinned': false,
             'pinnedUntil': yesterday.toIso8601String(),
             'updatedAt': now.toIso8601String(),
+            'notifyEnabled': false,
+          });
+    } catch (e) {
+      debugPrint('[AppState] Firestore write failed: $e');
+    }
+  }
+
+  Future<void> updateTaskNotify(String taskId, bool notifyEnabled) async {
+    if (_user == null) return;
+    final taskIndex = _tasks.indexWhere((t) => t.id == taskId);
+    if (taskIndex == -1) return;
+    
+    _tasks[taskIndex] = _tasks[taskIndex].copyWith(
+      notifyEnabled: notifyEnabled,
+      updatedAt: DateTime.now(),
+    );
+    notifyListeners();
+    _rescheduleNotifications();
+    
+    try {
+      await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .collection('tasks')
+          .doc(taskId)
+          .update({
+            'notifyEnabled': notifyEnabled,
+            'updatedAt': DateTime.now().toIso8601String(),
           });
     } catch (e) {
       debugPrint('[AppState] Firestore write failed: $e');

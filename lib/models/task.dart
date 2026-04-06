@@ -11,6 +11,7 @@ class Task {
   final int difficulty;
   final DateTime? updatedAt;
   final DateTime? pinnedUntil;
+  final bool notifyEnabled;
 
   Task({
     required this.id,
@@ -25,6 +26,7 @@ class Task {
     this.difficulty = 1,
     this.updatedAt,
     this.pinnedUntil,
+    this.notifyEnabled = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -41,6 +43,7 @@ class Task {
       'difficulty': difficulty,
       'updatedAt': updatedAt?.toIso8601String(),
       'pinnedUntil': pinnedUntil?.toIso8601String(),
+      'notifyEnabled': notifyEnabled,
     };
   }
 
@@ -60,6 +63,7 @@ class Task {
           map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : null,
       pinnedUntil:
           map['pinnedUntil'] != null ? DateTime.parse(map['pinnedUntil']) : null,
+      notifyEnabled: map['notifyEnabled'] ?? false,
     );
   }
 
@@ -78,6 +82,7 @@ class Task {
     int? difficulty,
     DateTime? updatedAt,
     DateTime? Function()? pinnedUntil,
+    bool? notifyEnabled,
   }) {
     return Task(
       id: id ?? this.id,
@@ -92,6 +97,7 @@ class Task {
       difficulty: difficulty ?? this.difficulty,
       updatedAt: updatedAt ?? this.updatedAt,
       pinnedUntil: pinnedUntil != null ? pinnedUntil() : this.pinnedUntil,
+      notifyEnabled: notifyEnabled ?? this.notifyEnabled,
     );
   }
 }

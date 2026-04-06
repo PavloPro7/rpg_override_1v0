@@ -55,11 +55,16 @@ class NotificationService {
 
     // Filter tasks for today: non-pinned, non-completed
     final todayTasks = tasks.where((t) {
-      if (t.isPinned) return false;
-      if (t.isCompleted) return false;
-      // For pinned tasks with completedDates, check if completed today
       final todayStr = today.toIso8601String().split('T')[0];
-      if (t.completedDates.contains(todayStr)) return false;
+      
+      // Skip completed tasks
+      if (!t.isPinned && t.isCompleted) return false;
+      if (t.isPinned && t.completedDates.contains(todayStr)) return false;
+      
+      // Include pinned tasks ONLY if notifyEnabled
+      if (t.isPinned) return t.notifyEnabled;
+      
+      // Non-pinned: must be today's date
       return DateUtils.dateOnly(t.date) == today;
     }).toList();
 
