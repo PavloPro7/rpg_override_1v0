@@ -733,7 +733,7 @@ class AppState extends ChangeNotifier {
       id: name.toLowerCase().replaceAll(' ', '_'),
       name: name,
       color: color,
-      xp: (startLevel - 1) * 100.0,
+      xp: Skill.cumulativeXpForLevel(startLevel),
       icon: icon,
     );
 
