@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
+import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:ui';
 import '../widgets/app_calendar.dart';
 import '../widgets/level_up_banner.dart';
@@ -593,16 +594,42 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                 children: [
                   if (activeTasks.isEmpty)
                     Padding(
-                      padding: const EdgeInsets.all(32.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 48.0),
                       child: Center(
-                        child: Text(
-                          _isStarredView
-                              ? (completedTasks.isEmpty
-                                    ? 'No starred tasks'
-                                    : 'No active starred tasks')
-                              : (completedTasks.isEmpty
-                                    ? 'No tasks for this day'
-                                    : 'No active tasks for this day'),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SvgPicture.asset(
+                              'assets/star_empty.svg',
+                              width: 120,
+                              height: 120,
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              _isStarredView
+                                  ? (completedTasks.isEmpty
+                                        ? 'No starred tasks'
+                                        : 'No active starred tasks')
+                                  : (completedTasks.isEmpty
+                                        ? 'No tasks for this day'
+                                        : 'No active tasks for this day'),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _isStarredView
+                                  ? 'Star important tasks to see them here'
+                                  : 'Tap + to add a new quest',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     )
