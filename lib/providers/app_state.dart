@@ -366,6 +366,12 @@ class AppState extends ChangeNotifier {
         await doc.reference.delete();
       }
 
+      // Delete skills collection
+      final skills = await userDoc.collection('skills').getWithCacheFallback();
+      for (final doc in skills.docs) {
+        await doc.reference.delete();
+      }
+
       // Update user doc back to pre-onboarding defaults
       await userDoc.set({
         'name': 'Hero',
