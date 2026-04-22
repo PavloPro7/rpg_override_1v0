@@ -22,6 +22,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _ageController = TextEditingController();
   bool _isLoading = false;
   int _currentStep = 0;
+  String? _selectedAvatarUrl;
 
   static const List<Map<String, String>> _presetSkills = [
     {'name': 'Programming', 'icon': '💻'},
@@ -75,7 +76,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() => _isLoading = true);
     final appState = context.read<AppState>();
 
-    final error = await appState.updateProfile(name, age, appState.avatarUrl);
+    final error = await appState.updateProfile(name, age, _selectedAvatarUrl ?? appState.avatarUrl);
 
     if (mounted && error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -101,7 +102,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     final name = _nameController.text.trim();
     final age = int.tryParse(_ageController.text.trim()) ?? 0;
-    final error = await appState.updateProfile(name, age, appState.avatarUrl);
+    final error = await appState.updateProfile(name, age, _selectedAvatarUrl ?? appState.avatarUrl);
 
     if (error != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -308,6 +309,43 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           style: TextStyle(color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 32),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          alignment: WrapAlignment.center,
+          children: [
+            'https://api.dicebear.com/7.x/pixel-art/png?seed=Warrior',
+            'https://api.dicebear.com/7.x/pixel-art/png?seed=Mage',
+            'https://api.dicebear.com/7.x/pixel-art/png?seed=Rogue',
+            'https://api.dicebear.com/7.x/pixel-art/png?seed=Cleric',
+            'https://api.dicebear.com/7.x/pixel-art/png?seed=Paladin',
+          ].map((url) {
+            final isSelected = _selectedAvatarUrl == url;
+            return GestureDetector(
+              onTap: () => setState(() => _selectedAvatarUrl = url),
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected
+                        ? colorScheme.primary
+                        : Colors.transparent,
+                    width: 3,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 28,
+                  backgroundImage: NetworkImage(url),
+                  onBackgroundImageError: (e, s) {},
+                  backgroundColor: Colors.transparent,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 8),
         _buildTextField(
           controller: _nameController,
           label: 'Hero Name',
