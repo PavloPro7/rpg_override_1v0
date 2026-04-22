@@ -13,14 +13,10 @@ class SkillDialogUtils {
     Color selectedColor = skill?.color ?? Colors.blue;
 
     final List<Color> colorPresets = [
-      Colors.blue,
-      Colors.red,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.pink,
-      Colors.teal,
-      Colors.amber,
+      Colors.blue, Colors.indigo, Colors.purple, Colors.pink,
+      Colors.red, Colors.deepOrange, Colors.orange, Colors.amber,
+      Colors.yellow, Colors.lime, Colors.green, Colors.teal,
+      Colors.cyan, Colors.blueGrey, Colors.brown, Colors.grey,
     ];
 
     void submitSkill() {
@@ -53,33 +49,43 @@ class SkillDialogUtils {
           icon: Icon(isEditing ? Icons.edit_note : Icons.psychology),
           title: Text(isEditing ? 'Edit Skill' : 'Design New Skill'),
           content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  textInputAction: TextInputAction.next,
-                  onSubmitted: (_) => submitSkill(),
-                  decoration: const InputDecoration(
-                    labelText: 'Skill Name',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.label),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: selectedColor.withValues(alpha: 0.5)),
+                color: selectedColor.withValues(alpha: 0.05),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    textInputAction: TextInputAction.next,
+                    onSubmitted: (_) => submitSkill(),
+                    decoration: InputDecoration(
+                      labelText: 'Skill Name',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.only(left: 12, right: 4),
+                        child: Text(iconController.text, style: const TextStyle(fontSize: 20)),
+                      ),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: iconController,
-                  textInputAction: TextInputAction.next,
-                  onSubmitted: (_) => submitSkill(),
-                  decoration: const InputDecoration(
-                    labelText: 'Emoji (Optional)',
-                    border: OutlineInputBorder(),
-                    hintText: '💪',
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: iconController,
+                    textInputAction: TextInputAction.next,
+                    onSubmitted: (_) => submitSkill(),
+                    decoration: const InputDecoration(
+                      labelText: 'Emoji (Optional)',
+                      border: OutlineInputBorder(),
+                      hintText: '💪',
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                if (!isEditing) ...[
+                  const SizedBox(height: 16),
                   const Text('Starting Level'),
                   Slider(
                     value: startLevel,
@@ -90,39 +96,41 @@ class SkillDialogUtils {
                     onChanged: (val) => setDialogState(() => startLevel = val),
                   ),
                   const SizedBox(height: 16),
+                  const Text('Skill Color'),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 36,
+                    width: double.maxFinite,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: colorPresets.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, colorIndex) {
+                        final color = colorPresets[colorIndex];
+                        final isSelected = selectedColor.value == color.value;
+                        return GestureDetector(
+                          onTap: () => setDialogState(() => selectedColor = color),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            width: isSelected ? 32 : 28,
+                            height: isSelected ? 32 : 28,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              border: isSelected
+                                  ? Border.all(color: Colors.white, width: 2.5)
+                                  : Border.all(color: Colors.transparent, width: 2.5),
+                              boxShadow: isSelected
+                                  ? [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 6, spreadRadius: 1)]
+                                  : null,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ],
-                const Text('Skill Color'),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: colorPresets.map((color) {
-                    final isSelected = selectedColor.value == color.value;
-                    return GestureDetector(
-                      onTap: () => setDialogState(() => selectedColor = color),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(color: Colors.white, width: 2)
-                              : null,
-                          boxShadow: isSelected
-                              ? [
-                                  const BoxShadow(
-                                    color: Colors.black26,
-                                    blurRadius: 4,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
+              ),
             ),
           ),
           actions: [
