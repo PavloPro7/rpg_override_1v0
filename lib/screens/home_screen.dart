@@ -8,7 +8,6 @@ import 'dashboard_screen.dart';
 import 'skills_screen.dart';
 import 'task_list.dart';
 import 'profile_screen.dart';
-import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,11 +32,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   static const Map<int, int> _tabVisualPosition = {
-    0: 0, // Stats - leftmost
+    0: 0, // Stats
     1: 1, // Skills
     2: 2, // Quests
-    4: 3, // Config
-    3: 4, // Profile - rightmost
+    3: 3, // Profile
   };
   DateTime? _targetDateForTasks;
   bool _cameFromDashboard = false;
@@ -97,13 +95,8 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() => _cameFromDashboard = false);
         _navigateToTab(3);
       },
-      onSettingsTap: () {
-        setState(() => _cameFromDashboard = false);
-        _navigateToTab(4);
-      },
     ),
     const ProfileScreen(),
-    const SettingsScreen(),
   ];
 
   @override
@@ -236,13 +229,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 Icons.today_outlined,
                 Icons.today,
                 'Quests',
-                appState,
-              ),
-              _buildNavItem(
-                4,
-                Icons.settings_outlined,
-                Icons.settings,
-                'Config',
                 appState,
               ),
               _buildNavItem(

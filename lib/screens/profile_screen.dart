@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/app_state.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -12,6 +13,10 @@ class ProfileScreen extends StatelessWidget {
 
     final appState = context.watch<AppState>();
     final user = appState.currentUser;
+
+    final isDark = appState.themeMode == ThemeMode.dark ||
+        (appState.themeMode == ThemeMode.system &&
+            MediaQuery.of(context).platformBrightness == Brightness.dark);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Profile'), centerTitle: true),
@@ -95,61 +100,90 @@ class ProfileScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  // Identity Box
-                  _buildSectionCard(context, 'Identity', [
-                    _buildInfoRow(
-                      context,
-                      Icons.badge_rounded,
-                      'Name',
-                      appState.userName ?? 'Not Set',
-                    ),
-                    const SizedBox(height: 16),
-                    _buildInfoRow(
-                      context,
-                      Icons.cake_rounded,
-                      'Age',
-                      appState.userAge?.toString() ?? 'Not Set',
+                  _buildSectionCard(context, 'Appearance', [
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Dark Mode'),
+                      subtitle: const Text('Switch between light and dark themes'),
+                      secondary: Icon(isDark ? Icons.dark_mode : Icons.light_mode),
+                      value: isDark,
+                      onChanged: (value) {
+                        appState.toggleTheme(value);
+                      },
                     ),
                   ]),
                   const SizedBox(height: 24),
-
-                  // Settings Box
                   _buildSectionCard(context, 'Settings', [
-                    _buildActionRow(
-                      context,
-                      Icons.edit_rounded,
-                      'Edit Profile',
-                      () => _showEditProfileDialog(context, appState),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildActionRow(
-                      context,
-                      Icons.email_outlined,
-                      'Change E-mail',
-                      appState.isAnonymous
-                          ? null
-                          : () => _showChangeEmailDialog(context, appState),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildActionRow(
-                      context,
-                      Icons.lock_outline_rounded,
-                      'Change Password',
-                      appState.isAnonymous
-                          ? null
-                          : () => _showChangePasswordDialog(context, appState),
+                    _buildActionRow(context, Icons.edit_rounded, 'Edit Profile',
+                        () => _showEditProfileDialog(context, appState)),
+                    const Divider(height: 32),
+                    _buildActionRow(context, Icons.email_outlined, 'Change E-mail',
+                        appState.isAnonymous ? null : () => _showChangeEmailDialog(context, appState)),
+                    const Divider(height: 32),
+                    _buildActionRow(context, Icons.lock_outline_rounded, 'Change Password',
+                        appState.isAnonymous ? null : () => _showChangePasswordDialog(context, appState)),
+                    const Divider(height: 32),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+                      child: DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Default Skill for New Quests',
+                          icon: Icon(Icons.star_outline_rounded),
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                        value: (appState.defaultSkillId == null ||
+                                appState.defaultSkillId == 'none' ||
+                                appState.skills.any((s) => s.id == appState.defaultSkillId))
+                            ? appState.defaultSkillId
+                            : null,
+                        items: [
+                          const DropdownMenuItem(value: null, child: Text('None')),
+                          const DropdownMenuItem(value: 'none', child: Text('⭐ General Quest')),
+                          ...appState.skills.map(
+                            (s) => DropdownMenuItem(value: s.id, child: Text('${s.icon} ${s.name}')),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          appState.setDefaultSkillId(value);
+                        },
+                      ),
                     ),
                   ]),
                   const SizedBox(height: 24),
-
-                  // Logout Box
-                  _buildSectionCard(context, 'Account', [
-                    _buildActionRow(
-                      context,
-                      Icons.logout_rounded,
-                      'Logout Account',
-                      () => appState.signOut(),
-                      isDestructive: true,
+                  _buildSectionCard(context, 'Account Management', [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.privacy_tip_outlined),
+                      title: const Text('Privacy Policy'),
+                      trailing: const Icon(Icons.open_in_new, size: 18),
+                      onTap: () async {
+                        final uri = Uri.parse('https://pavlopro7.github.io/rpg-tasks-privacy//');
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        }
+                      },
+                    ),
+                    const Divider(height: 32),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.restart_alt_rounded, color: Colors.orange),
+                      title: const Text('Reset Account'),
+                      onTap: () => _showResetConfirmDialog(context, appState),
+                    ),
+                    const Divider(height: 32),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.logout_rounded),
+                      title: const Text('Logout Account'),
+                      onTap: () => appState.signOut(),
+                    ),
+                    const Divider(height: 32),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                      title: const Text('Delete Account', style: TextStyle(color: Colors.red)),
+                      onTap: () => _showDeleteConfirmDialog(context, appState),
                     ),
                   ]),
                   SizedBox(height: 120 + MediaQuery.of(context).padding.bottom), // Added clearance for tap bar
@@ -604,6 +638,71 @@ class ProfileScreen extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showResetConfirmDialog(BuildContext context, AppState appState) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Account?'),
+        content: const Text(
+          'This will delete your character data and tasks so you can test the onboarding flow again. You will not be signed out.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.tonal(
+            onPressed: () async {
+              Navigator.pop(context);
+              await appState.resetAccount();
+            },
+            child: const Text('Reset Data'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmDialog(BuildContext context, AppState appState) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Account?'),
+        content: const Text(
+          'Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(dialogContext); // Close dialog only
+              try {
+                await appState.deleteAccount();
+              } catch (e) {
+                if (context.mounted) {
+                  final message = e.toString().contains('requires-recent-login')
+                      ? 'Please sign out and sign back in, then try deleting again.'
+                      : 'Failed to delete account: $e';
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(message),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Delete Forever'),
+          ),
+        ],
       ),
     );
   }
