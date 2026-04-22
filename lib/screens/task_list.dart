@@ -600,7 +600,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             SvgPicture.asset(
-                              'assets/star_empty.svg',
+                              _isStarredView ? 'assets/star_empty.svg' : 'assets/compass.svg',
                               width: 120,
                               height: 120,
                             ),
@@ -611,7 +611,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                                         ? 'No starred tasks'
                                         : 'No active starred tasks')
                                   : (completedTasks.isEmpty
-                                        ? 'No tasks for this day'
+                                        ? 'No quests today'
                                         : 'No active tasks for this day'),
                               style: TextStyle(
                                 fontSize: 16,
@@ -623,7 +623,7 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
                             Text(
                               _isStarredView
                                   ? 'Star important tasks to see them here'
-                                  : 'Tap + to add a new quest',
+                                  : 'Your quest log is empty — tap + to begin',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),

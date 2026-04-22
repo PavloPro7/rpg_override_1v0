@@ -81,6 +81,7 @@ flutter:
     - assets/playstore_icon.png
     - assets/logo_notification_sample.png
     - assets/star_empty.svg
+    - assets/compass.svg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
