@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../widgets/radar_chart.dart';
 import '../widgets/app_calendar.dart';
-import 'settings_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
@@ -44,13 +43,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('Dashboard'),
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.settings),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const SettingsScreen()),
-          ),
-        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),

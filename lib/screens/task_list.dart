@@ -1131,11 +1131,12 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
             isPinned: selectedPinned,
           );
         }
-        
+
+        if (!context.mounted) return;
         Navigator.pop(context);
 
         // If pinned, ask about notifications
-        if (selectedPinned && mounted) {
+        if (selectedPinned && context.mounted) {
           // Only ask if task wasn't already pinned, or if editing and pinning was just enabled
           final wasPreviouslyPinned = taskToEdit?.isPinned ?? false;
           if (!wasPreviouslyPinned) {

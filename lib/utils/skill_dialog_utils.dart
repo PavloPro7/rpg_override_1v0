@@ -1,4 +1,3 @@
-// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/skill.dart';
@@ -104,10 +103,10 @@ class SkillDialogUtils {
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: colorPresets.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      separatorBuilder: (context, index) => const SizedBox(width: 8),
                       itemBuilder: (context, colorIndex) {
                         final color = colorPresets[colorIndex];
-                        final isSelected = selectedColor.value == color.value;
+                        final isSelected = selectedColor == color;
                         return GestureDetector(
                           onTap: () => setDialogState(() => selectedColor = color),
                           child: AnimatedContainer(

@@ -132,7 +132,7 @@ class ProfileScreen extends StatelessWidget {
                           border: OutlineInputBorder(),
                           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         ),
-                        value: (appState.defaultSkillId == null ||
+                        initialValue: (appState.defaultSkillId == null ||
                                 appState.defaultSkillId == 'none' ||
                                 appState.skills.any((s) => s.id == appState.defaultSkillId))
                             ? appState.defaultSkillId
@@ -581,23 +581,6 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildInfoRow(
-    BuildContext context,
-    IconData icon,
-    String label,
-    String value,
-  ) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 16),
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-        const Spacer(),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-      ],
     );
   }
 

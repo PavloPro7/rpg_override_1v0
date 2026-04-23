@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../models/skill.dart';
 import '../utils/skill_dialog_utils.dart';
-import 'settings_screen.dart';
 
 class SkillsScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
@@ -70,13 +69,6 @@ class _SkillsScreenState extends State<SkillsScreen> {
           : AppBar(
               title: const Text('Character Skills'),
               centerTitle: true,
-              leading: IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                ),
-              ),
               actions: [
                 IconButton.filledTonal(
                   icon: const Icon(Icons.library_add_rounded),

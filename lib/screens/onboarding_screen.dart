@@ -661,10 +661,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: colorPresets.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          separatorBuilder: (context, index) => const SizedBox(width: 8),
                           itemBuilder: (context, colorIndex) {
                             final color = colorPresets[colorIndex];
-                            final isSelected = config.color.value == color.value;
+                            final isSelected = config.color == color;
                             return GestureDetector(
                               onTap: () => setState(() => config.color = color),
                               child: AnimatedContainer(
