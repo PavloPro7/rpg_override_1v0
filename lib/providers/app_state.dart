@@ -383,6 +383,7 @@ class AppState extends ChangeNotifier {
       _userAge = 0;
       _tasks = [];
       _skills = _initialSkills();
+      _defaultSkillId = null;
       await _savePreferences();
       notifyListeners();
     } catch (e) {

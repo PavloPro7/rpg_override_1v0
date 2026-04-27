@@ -9,6 +9,7 @@ import '../widgets/app_calendar.dart';
 import '../widgets/level_up_banner.dart';
 import '../providers/app_state.dart';
 import '../models/task.dart';
+import '../models/skill.dart';
 
 class TodayTasksScreen extends StatefulWidget {
   final VoidCallback? onProfileTap;
@@ -1077,6 +1078,13 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
     // Initial skill selection
     String? selectedSkillId =
         taskToEdit?.skillId ?? appState.defaultSkillId ?? 'none';
+
+    // Validate selectedSkillId — reset to 'none' if it points to a non-existent skill
+    if (selectedSkillId != null &&
+        selectedSkillId != 'none' &&
+        !appState.skills.any((s) => s.id == selectedSkillId)) {
+      selectedSkillId = 'none';
+    }
     TimeOfDay? selectedTime = taskToEdit?.time != null
         ? TimeOfDay.fromDateTime(taskToEdit!.time!)
         : null;
@@ -1092,7 +1100,10 @@ class TodayTasksScreenState extends State<TodayTasksScreen> {
       if (selectedSkillId != null) {
         final skill = selectedSkillId == 'none'
             ? null
-            : appState.skills.firstWhere((s) => s.id == selectedSkillId);
+            : appState.skills.cast<Skill?>().firstWhere(
+                (s) => s!.id == selectedSkillId,
+                orElse: () => null,
+              );
         final taskTitle = titleController.text.trim().isEmpty
             ? (skill?.name ?? 'New Quest')
             : titleController.text.trim();
